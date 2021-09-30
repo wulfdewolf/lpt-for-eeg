@@ -21,6 +21,12 @@
   - Pretrained transformers for EEG decoding
   - Pretrained transformers for BCI classification tasks
 
+- Dutch title:
+
+  - ALS?
+
+- Assistant on title pages?
+
 - Structure:
 
   1. Abstract
