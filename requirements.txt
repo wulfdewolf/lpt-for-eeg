@@ -1,0 +1,12 @@
+boto3==1.17.102
+einops==0.3.0
+matplotlib==3.2.1
+numpy==1.18.3
+tape-proteins==0.4
+tensorflow
+tensorflow-datasets==4.0.1
+torch==1.7.1
+torchvision==0.8.2
+transformers==4.1.1
+tqdm==4.46.0
+wandb==0.9.1
