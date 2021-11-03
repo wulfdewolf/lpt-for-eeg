@@ -37,13 +37,19 @@ def experiment(
 
     return_last_only = True
 
-    if task == 'bit-memory':
-        from universal_computation.datasets.bit_memory import BitMemoryDataset
-        dataset = BitMemoryDataset(n=kwargs['n'], num_patterns=kwargs['num_patterns'], device=device)
-        input_dim = kwargs['n'] if patch_size is None else patch_size
-        output_dim = 2*kwargs['n'] if patch_size is None else 2 * patch_size
+    if task == 'mnist':
+        from EEG_decoding.datasets.mnist import MNISTDataset
+        dataset = MNISTDataset(batch_size=batch_size, patch_size=patch_size, device=device)
+        input_dim, output_dim = patch_size ** 2, 10
         use_embeddings = False
-        model_type = 'EEG'
+        experiment_type = 'classification'
+    elif task == 'braindecode_example':
+        from EEG_decoding.datasets.EEGDataset import EEGDataset
+        dataset = EEGDataset(batch_size=batch_size, patch_size=patch_size, device=device)
+        input_dim, output_dim = patch_size ** 2, 4
+        use_embeddings = False
+        model_type = 'FPT'
+        
     else:
         raise NotImplementedError('dataset not implemented')
 
@@ -172,7 +178,7 @@ def run_experiment(
     parser.add_argument('--save_models_every', '-int', type=int, default=25,
                         help='How often to save models locally')
 
-    parser.add_argument('--device', '-d', type=str, default='cuda',
+    parser.add_argument('--device', '-d', type=str, default='cpu',
                         help='Which device for Pytorch to use')
     parser.add_argument('--gpu_batch_size', '-gbs', type=int, default=16,
                         help='Max batch size to put on GPU (used for gradient accumulation)')

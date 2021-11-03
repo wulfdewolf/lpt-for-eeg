@@ -1,4 +1,4 @@
-#!/home/wolf/Documents/study/year2/thesis/fpt-for-eeg/env/bin/python3
+#!/home/okami/fpt-for-eeg/env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

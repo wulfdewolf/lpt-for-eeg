@@ -2,10 +2,10 @@ from EEG_decoding.experiment import run_experiment
 
 if __name__ == '__main__':
 
-    experiment_name = 'fpt'
+    experiment_name = 'fpt_first_trial'
 
     experiment_params = dict(
-        task='bit-memory',
+        task='braindecode_example',
         patch_size=50,
 
         model_name='gpt2',
