@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 """
 Create Dataset object
 """
-from EEG_decoding.datasets.dataset import Dataset
+from EEGdecoding.datasets.dataset import Dataset
 
 
 class EEGDataset(Dataset):
@@ -75,32 +75,29 @@ class EEGDataset(Dataset):
         Split
         """
         splitted = windows_dataset.split('session')
-        self.d_train = DataLoader(splitted['session_T'])
-        self.d_test = DataLoader(splitted['session_E'])
-        n_chans = self.d_train.dataset[0][0].shape[0]
-        input_window_samples = self.d_test.dataset[0][0].shape[1]
-        print(n_chans)
-        print(input_window_samples)
+        self.d_train = DataLoader(
+            splitted['session_T'], 
+            batch_size=batch_size, drop_last=True, shuffle=True,
+        )
+        self.d_test = DataLoader(
+            splitted['session_E'],
+            batch_size=batch_size, drop_last=True, shuffle=True,
+        )
 
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
     def get_batch(self, batch_size=None, train=True):
-        if train:
-            _, x = next(self.train_enum, (None, (None, None)))
-            y = x[1]
-            x = x[0]
-            if x is None:
+        _, (x, y, _) = next(self.train_enum if train else self.test_enum, (None, (None, None, None)))
+        if x is None:
+            if train:
                 self.train_enum = enumerate(self.d_train)
-                _, (x, y) = next(self.train_enum)
-        else:
-            _, (x, y) = next(self.test_enum, (None, (None, None)))
-            if x is None:
+            else:
                 self.test_enum = enumerate(self.d_test)
-                _, (x, y) = next(self.test_enum)
+            _, (x, y, _) = next(self.train_enum if train else self.test_enum)
 
         if self.patch_size is not None:
-            x = rearrange(x, 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size)
+            x = rearrange(x, 'batch_size channels (w patch_size) -> batch_size w (channels patch_size)', patch_size=self.patch_size)
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)

@@ -1,13 +1,14 @@
-from EEG_decoding.experiment import run_experiment
+from EEGdecoding.experiment import run_experiment
 
 if __name__ == '__main__':
 
-    experiment_name = 'fpt_first_trial'
+    experiment_name = 'fpt_for_eeg_noob_trials'
 
     experiment_params = dict(
-        task='braindecode_example',
-        patch_size=50,
+        task='BCI_Competition_IV_2a',
+        patch_size=1125,
 
+        model_type='FPT',
         model_name='gpt2',
         pretrained=True,       # if vit this is forced to true, if lstm this is forced to false
 

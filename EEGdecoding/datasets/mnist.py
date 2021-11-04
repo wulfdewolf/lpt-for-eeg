@@ -28,7 +28,6 @@ class MNISTDataset(Dataset):
             batch_size=batch_size, drop_last=True, shuffle=True,
         )
 
-        print(torchvision.datasets.MNIST('data/mnist', download=True, train=True, transform=transform))
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
@@ -44,11 +43,13 @@ class MNISTDataset(Dataset):
                 self.test_enum = enumerate(self.d_test)
                 _, (x, y) = next(self.test_enum)
 
+        print(x.shape)
         if self.patch_size is not None:
             x = rearrange(x, 'b c (h p1) (w p2) -> b (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size)
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
+        print(x.shape)
 
         self._ind += 1
 

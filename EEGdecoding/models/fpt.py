@@ -152,14 +152,14 @@ class FPT(nn.Module):
     def forward(self, x):
 
         # reshape x (batch_size, seq_len, dim) into patches (batch_size, seq_len*num_patches, patch_dim)
-       # orig_dim = x.shape[-1]
-       # if orig_dim != self.input_dim and not self.use_embeddings_for_in:
-       #     if orig_dim % self.input_dim != 0:
-       #         raise ValueError('dimension of x must be divisible by patch size')
-       #     ratio = orig_dim // self.input_dim
-       #     x = x.reshape(x.shape[0], x.shape[1] * ratio, self.input_dim)
-       # else:
-       #     ratio = 1
+        orig_dim = x.shape[-1]
+        if orig_dim != self.input_dim and not self.use_embeddings_for_in:
+            if orig_dim % self.input_dim != 0:
+                raise ValueError('dimension of x must be divisible by patch size')
+            ratio = orig_dim // self.input_dim
+            x = x.reshape(x.shape[0], x.shape[1] * ratio, self.input_dim)
+        else:
+            ratio = 1
 
         x = self.in_net(x)
 
