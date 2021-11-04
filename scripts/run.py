@@ -23,7 +23,7 @@ if __name__ == '__main__':
         in_layer_sizes=None,   # not in paper, but can specify layer sizes for an MLP,
         out_layer_sizes=None,  # ex. [32, 32] creates a 2-layer MLP with dimension 32
 
-        learning_rate=1e-3,
+        learning_rate=1e-2,
         batch_size=4,
         dropout=0.1,
         orth_gain=1.41,        # orthogonal initialization of input layer

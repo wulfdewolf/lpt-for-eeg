@@ -9,6 +9,7 @@ class Trainer:
     def __init__(
             self,
             model,
+            model_type,
             dataset,
             loss_fn,
             accuracy_fn=None,
@@ -20,6 +21,7 @@ class Trainer:
             grad_accumulate=1,
     ):
         self.model = model
+        self.model_type = model_type
         self.dataset = dataset
         self.loss_fn = loss_fn
         self.acc_fn = accuracy_fn
@@ -35,6 +37,10 @@ class Trainer:
 
     def get_loss(self, x, y, return_acc=False):
         out = self.model(x)
+
+        if self.model_type == 'EEG': 
+            out = out[:,None,:]         # braindecode uses a different format, extra nested level is needed around the predicted class probs
+
         loss = self.loss_fn(out, y, x=x)
         if return_acc:
             if self.acc_fn is None:

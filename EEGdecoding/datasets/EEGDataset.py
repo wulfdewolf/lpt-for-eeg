@@ -71,6 +71,7 @@ class EEGDataset(Dataset):
             preload=True,
         )
 
+
         """
         Split
         """
@@ -84,8 +85,13 @@ class EEGDataset(Dataset):
             batch_size=batch_size, drop_last=True, shuffle=True,
         )
 
+        # Store channels and classes
+        self.n_channels = splitted['session_T'][0][0].shape[0]
+        self.input_window_samples = splitted['session_T'][0][0].shape[1]
+
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
+
 
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(self.train_enum if train else self.test_enum, (None, (None, None, None)))
@@ -97,7 +103,7 @@ class EEGDataset(Dataset):
             _, (x, y, _) = next(self.train_enum if train else self.test_enum)
 
         if self.patch_size is not None:
-            x = rearrange(x, 'batch_size channels (w patch_size) -> batch_size w (channels patch_size)', patch_size=self.patch_size)
+            x = rearrange(x, 'batch_size channels (w patch_size) -> batch_size (channels w) patch_size', patch_size=self.patch_size)
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)

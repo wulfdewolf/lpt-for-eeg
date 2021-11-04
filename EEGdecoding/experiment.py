@@ -6,6 +6,7 @@ import argparse
 from datetime import datetime
 import random
 import sys
+from braindecode.models import ShallowFBCSPNet
 
 from EEGdecoding.models.fpt import FPT
 from EEGdecoding.trainer import Trainer
@@ -44,16 +45,9 @@ def experiment(
         dataset.get_batch(batch_size)
         input_dim, output_dim = patch_size ** 2, 10
         use_embeddings = False
-    elif task == 'bit-memory':
-        from EEGdecoding.datasets.bit_memory import BitMemoryDataset
-        dataset = BitMemoryDataset(n=kwargs['n'], num_patterns=kwargs['num_patterns'], device=device)
-        input_dim = kwargs['n'] if patch_size is None else patch_size
-        output_dim = 2*kwargs['n'] if patch_size is None else 2 * patch_size
-        use_embeddings = False
     elif task == 'BCI_Competition_IV_2a':
         from EEGdecoding.datasets.EEGDataset import EEGDataset
         dataset = EEGDataset(batch_size=batch_size, patch_size=patch_size, device=device)
-        dataset.get_batch(batch_size)
         input_dim, output_dim = patch_size, 4
         use_embeddings = False
         
@@ -73,7 +67,12 @@ def experiment(
 
     # Model
     if model_type == "EEG":
-        model = 0
+        model = ShallowFBCSPNet(
+                    dataset.n_channels,
+                    output_dim,
+                    input_window_samples=dataset.input_window_samples,
+                    final_conv_length='auto',
+                )
     elif model_type == "FPT":
         model = FPT(
             input_dim=input_dim,
@@ -102,6 +101,7 @@ def experiment(
     gpu_batch_size = exp_args['gpu_batch_size']
     trainer = Trainer(
         model,
+        model_type,
         dataset,
         loss_fn=loss_fn,
         accuracy_fn=accuracy_fn,
@@ -164,7 +164,7 @@ def run_experiment(
 ):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--num_iters', '-it', type=int, default=10000,
+    parser.add_argument('--num_iters', '-it', type=int, default=4,
                         help='Number of iterations for trainer')
     parser.add_argument('--steps_per_iter', type=int, default=100,
                         help='Number of gradient steps per iteration')
