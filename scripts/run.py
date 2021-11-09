@@ -2,7 +2,7 @@ from EEGdecoding.experiment import run_experiment
 
 if __name__ == '__main__':
 
-    experiment_name = 'fpt_for_eeg_noob_trials'
+    experiment_name = 'noob_trials'
 
     experiment_params = dict(
         task='BCI_Competition_IV_2a',
