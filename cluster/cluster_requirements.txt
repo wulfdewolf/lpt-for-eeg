@@ -1,0 +1,5 @@
+transformers
+moabb
+braindecode
+einops
+
