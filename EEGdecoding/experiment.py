@@ -19,7 +19,9 @@ def experiment(
         **kwargs
 ):
 
+    # Torch threads setup
     torch.set_num_threads(len(os.sched_getaffinity(0)))
+    print(len(os.sched_getaffinity(0)))
     torch.set_num_interop_threads(1)
 
     """
