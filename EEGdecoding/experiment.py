@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import os
 import wandb
 
 import argparse
@@ -17,6 +18,9 @@ def experiment(
         exp_args,
         **kwargs
 ):
+
+    torch.set_num_threads(len(os.sched_getaffinity(0)))
+    torch.set_num_interop_threads(1)
 
     """
     Preliminary checks
@@ -175,7 +179,7 @@ def run_experiment(
                         help='Whether or not to log to Weights and Biases')
     parser.add_argument('--note', '-n', type=str, default='',
                         help='An optional note to be logged to W&B')
-    parser.add_argument('--wandb_project', type=str, default='my_project',
+    parser.add_argument('--wandb_project', type=str, default='fpt-for-eeg',
                         help='Project name for W&B')
     parser.add_argument('--include_date', type=bool, default=True,
                         help='Whether to include date in run name')
