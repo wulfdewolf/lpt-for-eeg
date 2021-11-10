@@ -147,7 +147,7 @@ def experiment(
             **kwargs,
         )
         wandb.init(
-            name=f'{exp_name}-{short_name}',
+            name=f'{exp_name}-{model_type}-{short_name}',
             group=f'{exp_name}-{task}',
             project=wandb_project,
             config=config,
