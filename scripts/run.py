@@ -9,7 +9,7 @@ if __name__ == '__main__':
         task='BCI_Competition_IV_2a',
         patch_size=1125,
 
-        model_type='FPT',
+        model_type='EEG',
         model_name='gpt2',
         pretrained=True,       # if vit this is forced to true, if lstm this is forced to false
 
