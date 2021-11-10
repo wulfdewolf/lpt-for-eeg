@@ -29,7 +29,7 @@ def experiment(
            kwargs['batch_size'] % exp_args['gpu_batch_size'] == 0
 
     # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
-    if kwargs['cluster']:
+    if exp_args['cluster']:
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
