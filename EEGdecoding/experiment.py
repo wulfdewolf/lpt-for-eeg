@@ -137,7 +137,7 @@ def experiment(
     wandb_project = exp_args['wandb_project']
 
     short_name = str(random.randint(int(1e5), int(1e6) - 1))
-    run_name = f'{exp_name}-{task}-{short_name}'
+    run_name = f'{exp_name}-{task}-{model_type}-{short_name}'
 
     if log_to_wandb:
         config = dict(
