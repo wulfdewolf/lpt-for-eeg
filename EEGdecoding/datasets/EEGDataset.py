@@ -11,7 +11,7 @@ from EEGdecoding.datasets.dataset import Dataset
 
 class EEGDataset(Dataset):
 
-    def __init__(self, batch_size, patch_size=None, *args, **kwargs):
+    def __init__(self, batch_size, seed, patch_size=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.batch_size = batch_size  # we fix it so we can use dataloader
@@ -76,13 +76,39 @@ class EEGDataset(Dataset):
         Split
         """
         splitted = windows_dataset.split('session')
+
+
+        """
+        Set worker seeds for reproducibility
+        """
+        import torch
+        import random
+        def seed_worker(worker_id):
+            torch.manual_seed(seed)
+            random.seed(seed)
+            np.random.seed(seed)
+
+        g = torch.Generator()
+        g.manual_seed(seed)
+
+        """
+        Data loader
+        """
         self.d_train = DataLoader(
             splitted['session_T'], 
-            batch_size=batch_size, drop_last=True, shuffle=True,
+            batch_size=batch_size, 
+            drop_last=True, 
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=g,
         )
         self.d_test = DataLoader(
             splitted['session_E'],
-            batch_size=batch_size, drop_last=True, shuffle=True,
+            batch_size=batch_size, 
+            drop_last=True, 
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=g,
         )
 
         # Store channels and classes

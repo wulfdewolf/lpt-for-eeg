@@ -19,10 +19,6 @@ def experiment(
         **kwargs
 ):
 
-    # Torch threads setup for cluster
-    torch.set_num_threads(len(os.sched_getaffinity(0)))
-    torch.set_num_interop_threads(1)
-
     """
     Preliminary checks
     """
@@ -31,6 +27,20 @@ def experiment(
     assert 'batch_size' in kwargs
     assert kwargs['batch_size'] <= exp_args['gpu_batch_size'] or \
            kwargs['batch_size'] % exp_args['gpu_batch_size'] == 0
+
+    # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
+    if kwargs['cluster']:
+        torch.set_num_threads(len(os.sched_getaffinity(0)))
+        torch.set_num_interop_threads(1)
+
+
+    """
+    Set seeds for reproducibility
+    """
+    seed = kwargs['seed']
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
 
     """
     Create dataset, model, and trainer
@@ -52,7 +62,7 @@ def experiment(
         use_embeddings = False
     elif task == 'BCI_Competition_IV_2a':
         from EEGdecoding.datasets.EEGDataset import EEGDataset
-        dataset = EEGDataset(batch_size=batch_size, patch_size=patch_size, device=device)
+        dataset = EEGDataset(batch_size=batch_size, seed=seed, patch_size=patch_size, device=device)
         input_dim, output_dim = patch_size, 4
         use_embeddings = False
         
@@ -190,6 +200,8 @@ def run_experiment(
     parser.add_argument('--save_models_every', '-int', type=int, default=25,
                         help='How often to save models locally')
 
+    parser.add_argument('--cluster', '-c', type=bool, default=False,
+                        help='Whether or not the experiment is ran on the HPC cluster')
     parser.add_argument('--device', '-d', type=str, default='cuda',
                         help='Which device for Pytorch to use')
     parser.add_argument('--gpu_batch_size', '-gbs', type=int, default=16,

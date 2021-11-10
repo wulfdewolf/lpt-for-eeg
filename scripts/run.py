@@ -5,6 +5,7 @@ if __name__ == '__main__':
     experiment_name = 'noob_trials'
 
     experiment_params = dict(
+        seed=20200220,
         task='BCI_Competition_IV_2a',
         patch_size=1125,
 
