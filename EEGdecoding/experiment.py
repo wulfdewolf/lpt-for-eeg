@@ -19,7 +19,6 @@ def experiment(exp_name, exp_args, **kwargs):
     Preliminary checks
     """
 
-    print(exp_args["log_to_wandb"])
     # Must be able to accumulate gradient if batch size is large
     assert "batch_size" in kwargs
     assert (
@@ -52,21 +51,13 @@ def experiment(exp_name, exp_args, **kwargs):
 
     return_last_only = True
 
-    if task == "mnist":
-        from EEGdecoding.datasets.mnist import MNISTDataset
-
-        dataset = MNISTDataset(
-            batch_size=batch_size, patch_size=patch_size, device=device
-        )
-        dataset.get_batch(batch_size)
-        input_dim, output_dim = patch_size ** 2, 10
-        use_embeddings = False
-    elif task == "BCI_Competition_IV_2a":
+    if task == "BCI_Competition_IV_2a":
         from EEGdecoding.datasets.EEGDataset import EEGDataset
 
         dataset = EEGDataset(
             batch_size=batch_size, seed=seed, window_size=window_size, device=device
         )
+        dataset.get_batch()
         input_dim, output_dim = dataset.input_window_samples, 4
         use_embeddings = False
 
@@ -89,7 +80,6 @@ def experiment(exp_name, exp_args, **kwargs):
         model = ShallowFBCSPNet(
             dataset.n_channels,
             output_dim,
-            input_window_samples=dataset.input_window_samples,
             final_conv_length=30,
         )
     elif model_type == "FPT":
