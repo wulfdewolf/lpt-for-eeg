@@ -69,6 +69,8 @@ def experiment(exp_name, exp_args, **kwargs):
 
     def loss_fn(out, y, x=None):
         out = out[:, 0]
+        print(out.shape)
+        print(y.shape)
         return ce_loss(out, y)
 
     def accuracy_fn(preds, true, x=None):
@@ -80,7 +82,8 @@ def experiment(exp_name, exp_args, **kwargs):
         model = ShallowFBCSPNet(
             dataset.n_channels,
             output_dim,
-            final_conv_length=30,
+            input_window_samples=dataset.input_window_samples,
+            final_conv_length="auto",
         )
     elif model_type == "FPT":
         model = FPT(
