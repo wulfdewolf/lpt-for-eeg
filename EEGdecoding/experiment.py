@@ -19,6 +19,7 @@ def experiment(exp_name, exp_args, **kwargs):
     Preliminary checks
     """
 
+    print(exp_args["log_to_wandb"])
     # Must be able to accumulate gradient if batch size is large
     assert "batch_size" in kwargs
     assert (
@@ -140,7 +141,6 @@ def experiment(exp_name, exp_args, **kwargs):
     log_to_wandb = exp_args["log_to_wandb"]
     save_models = exp_args["save_models"]
     wandb_project = exp_args["wandb_project"]
-    print(log_to_wandb)
 
     short_name = str(random.randint(int(1e5), int(1e6) - 1))
     run_name = f"{exp_name}-{task}-{model_type}-{short_name}"

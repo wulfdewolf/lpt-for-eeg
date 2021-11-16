@@ -11,4 +11,4 @@ cd ~/fpt-for-eeg
 export PYTHONPATH=~/fpt-for-eeg:$PYTHONPATH
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-python scripts/run.py --log_to_wandb true --cluster true 
+python scripts/run.py --cluster
