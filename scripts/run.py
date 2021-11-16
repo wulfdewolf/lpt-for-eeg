@@ -8,7 +8,7 @@ if __name__ == "__main__":
         seed=20200220,
         task="BCI_Competition_IV_2a",
         window_size=1000,
-        model_type="EEG",
+        model_type="FPT",
         model_name="gpt2",
         pretrained=True,  # if vit this is forced to true, if lstm this is forced to false
         freeze_trans=True,  # if False, we don't check arguments other than in and out
