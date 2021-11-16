@@ -139,7 +139,7 @@ class EEGDataset(Dataset):
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
-    def get_batch(self, train=True):
+    def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(
             self.train_enum if train else self.test_enum, (None, (None, None, None))
         )

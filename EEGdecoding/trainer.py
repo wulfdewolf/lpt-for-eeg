@@ -63,7 +63,7 @@ class Trainer:
         for _ in tqdm(range(self.steps_per_epoch)):
             step_loss = 0
             for _ in range(self.grad_accumulate):
-                x, y = self.dataset.get_batch(train=True)
+                x, y = self.dataset.get_batch(self.batch_size, train=True)
                 loss, acc = self.get_loss(x, y, return_acc=True)
                 loss = loss / self.grad_accumulate
                 loss.backward()
