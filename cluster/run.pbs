@@ -1,7 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=fpt-for-eeg
 #SBATCH --time=24:00:00
-#PBS -l nodes=1:ppn=4:gpus=1:feature=kepler
+#PBS -l nodes=1:ppn=4:gpus=1
+#PBS -l feature=kepler
 
 module load PyTorch/1.7.1-fosscuda-2020b
 module load torchvision/0.8.2-fosscuda-2020b-PyTorch-1.7.1
