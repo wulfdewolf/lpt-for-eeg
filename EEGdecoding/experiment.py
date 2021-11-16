@@ -45,7 +45,7 @@ def experiment(exp_name, exp_args, **kwargs):
 
     task = kwargs["task"]
     batch_size = kwargs["batch_size"]
-    patch_size = kwargs["patch_size"]
+    window_size = kwargs["window_size"]
     device = exp_args["device"]
     model_type = kwargs["model_type"]
 
@@ -64,9 +64,9 @@ def experiment(exp_name, exp_args, **kwargs):
         from EEGdecoding.datasets.EEGDataset import EEGDataset
 
         dataset = EEGDataset(
-            batch_size=batch_size, seed=seed, patch_size=patch_size, device=device
+            batch_size=batch_size, seed=seed, window_size=window_size, device=device
         )
-        input_dim, output_dim = patch_size, 4
+        input_dim, output_dim = dataset.input_window_samples, 4
         use_embeddings = False
 
     else:

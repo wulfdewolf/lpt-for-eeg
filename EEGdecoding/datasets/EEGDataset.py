@@ -10,11 +10,11 @@ from EEGdecoding.datasets.dataset import Dataset
 
 
 class EEGDataset(Dataset):
-    def __init__(self, batch_size, seed, patch_size=None, *args, **kwargs):
+    def __init__(self, batch_size, seed, window_size=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.batch_size = batch_size  # we fix it so we can use dataloader
-        self.patch_size = patch_size  # grid of (patch_size x patch_size)
+        self.batch_size = batch_size
+        self.window_size = window_size
 
         """
         Loading dataset
@@ -72,17 +72,26 @@ class EEGDataset(Dataset):
         # Calculate the trial start offset in samples.
         trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
 
-        # Create windows using braindecode function for this. It needs parameters to define how
-        # trials should be used.
-        windows_dataset = create_windows_from_events(
-            dataset,
-            trial_start_offset_samples=trial_start_offset_samples,
-            trial_stop_offset_samples=0,
-            window_size_samples=1000,
-            window_stride_samples=2,
-            drop_last_window=False,
-            preload=True,
-        )
+        # Create windows using braindecode function for this.
+        if window_size is not None:
+            # Cropped
+            windows_dataset = create_windows_from_events(
+                dataset,
+                trial_start_offset_samples=trial_start_offset_samples,
+                trial_stop_offset_samples=0,
+                window_size_samples=window_size,
+                window_stride_samples=10,
+                drop_last_window=False,
+                preload=True,
+            )
+        else:
+            # Trail-wise
+            windows_dataset = create_windows_from_events(
+                dataset,
+                trial_start_offset_samples=trial_start_offset_samples,
+                trial_stop_offset_samples=0,
+                preload=True,
+            )
 
         """
         Split
@@ -130,23 +139,17 @@ class EEGDataset(Dataset):
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
-    def get_batch(self, batch_size=None, train=True):
+    def get_batch(self, train=True):
         _, (x, y, _) = next(
             self.train_enum if train else self.test_enum, (None, (None, None, None))
         )
+
         if x is None:
             if train:
                 self.train_enum = enumerate(self.d_train)
             else:
                 self.test_enum = enumerate(self.d_test)
             _, (x, y, _) = next(self.train_enum if train else self.test_enum)
-
-        if self.patch_size is not None:
-            x = rearrange(
-                x,
-                "batch_size channels (w patch_size) -> batch_size (channels w) patch_size",
-                patch_size=self.patch_size,
-            )
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
