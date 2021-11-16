@@ -18,6 +18,7 @@ def experiment(exp_name, exp_args, **kwargs):
     """
     Preliminary checks
     """
+    print(exp_args["cluster"])
 
     # Must be able to accumulate gradient if batch size is large
     assert "batch_size" in kwargs
@@ -205,7 +206,7 @@ def run_experiment(
     parser.add_argument(
         "--log_to_wandb",
         "-w",
-        type=bool,
+        action="store_true",
         default=False,
         help="Whether or not to log to Weights and Biases",
     )
@@ -221,7 +222,7 @@ def run_experiment(
     )
     parser.add_argument(
         "--include_date",
-        type=bool,
+        action="store_false",
         default=True,
         help="Whether to include date in run name",
     )
@@ -229,7 +230,7 @@ def run_experiment(
     parser.add_argument(
         "--save_models",
         "-s",
-        type=bool,
+        action="store_true",
         default=False,
         help="Whether or not to save the model files locally",
     )
@@ -244,7 +245,7 @@ def run_experiment(
     parser.add_argument(
         "--cluster",
         "-c",
-        type=bool,
+        action="store_true",
         default=False,
         help="Whether or not the experiment is ran on the HPC cluster",
     )
