@@ -31,6 +31,8 @@ def experiment(exp_name, exp_args, **kwargs):
     else:
         data_dir = os.path.abspath("./data")
 
+    print(data_dir)
+
     # Generate id for run before setting seed
     rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
