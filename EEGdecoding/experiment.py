@@ -28,7 +28,7 @@ def experiment(exp_name, exp_args, **kwargs):
         torch.set_num_interop_threads(1)
 
     # Generate id for run before setting seed
-    rid = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     """
     Set seeds for reproducibility
@@ -80,9 +80,14 @@ def experiment(exp_name, exp_args, **kwargs):
 
         # Dataset
         dataset = EEGDataset(
-            task=task, batch_size=batch_size, seed=seed, window_size=window_size, device=device, data_dir=data_dir
+            task=task,
+            batch_size=batch_size,
+            seed=seed,
+            window_size=window_size,
+            device=device,
+            data_dir=data_dir,
         )
-        input_dim, output_dim = window_size, dataset.classes 
+        input_dim, output_dim = window_size, dataset.classes
         use_embeddings = False
 
         # Model
@@ -196,7 +201,7 @@ def experiment(exp_name, exp_args, **kwargs):
             num_samples=10,
             scheduler=scheduler,
             progress_reporter=reporter,
-            local_dir="optimisation_results"
+            local_dir="optimisation_results",
         )
 
         # Print and save results
@@ -212,7 +217,7 @@ def experiment(exp_name, exp_args, **kwargs):
                 best_trial.last_result["accuracy"]
             )
         )
-        
+
         if best_trial is not None:
             best_checkpoint_dir = best_trial.checkpoint.value
             model_state, optimizer_state = torch.load(
@@ -221,7 +226,8 @@ def experiment(exp_name, exp_args, **kwargs):
 
             if save_models:
                 with open(
-                    f"models/{exp_name}-{task}-{model_type}-{best_trial.config}.pt", "wb"
+                    f"models/{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
+                    "wb",
                 ) as f:
                     state_dict = dict(model=model_state, optim=optimizer_state)
                     torch.save(state_dict, f)
@@ -281,7 +287,7 @@ def run_experiment(
         "--num_iters",
         "-it",
         type=int,
-        default=4,
+        default=20,
         help="Number of iterations for trainer",
     )
     parser.add_argument(
@@ -296,7 +302,6 @@ def run_experiment(
         default=25,
         help="Number of test gradient steps per iteration",
     )
-
     parser.add_argument(
         "--log_to_wandb",
         "-w",
@@ -320,7 +325,6 @@ def run_experiment(
         default=True,
         help="Whether to include date in run name",
     )
-
     parser.add_argument(
         "--save_models",
         "-s",
@@ -335,7 +339,6 @@ def run_experiment(
         default=25,
         help="How often to save models locally",
     )
-
     parser.add_argument(
         "--cluster",
         "-c",

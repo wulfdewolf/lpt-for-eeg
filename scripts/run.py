@@ -29,8 +29,14 @@ if __name__ == "__main__":
             learning_rate=tune.loguniform(1e-4, 1e-1),
             batch_size=tune.choice([2, 4, 8, 16]),
             dropout=tune.loguniform(0.1, 1),
-            orth_gain=1.41,  # orthogonal initialization of input layer
+            orth_gain=tune.loguniform(0.1, 3),
         ),
+        # hyperparams=dict(
+        # learning_rate=0.1,
+        # batch_size=16,
+        # dropout=0.1,
+        # orth_gain=1.42,
+        # ),
     )
 
     run_experiment(experiment_name, experiment_params)
