@@ -27,6 +27,9 @@ def experiment(exp_name, exp_args, **kwargs):
     if cluster:
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
+        data_dir = os.path.join(os.environ["VSC_DATA"], "data")
+    else:
+        data_dir = os.path.abs("./data")
 
     # Generate id for run before setting seed
     rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -48,11 +51,6 @@ def experiment(exp_name, exp_args, **kwargs):
     hyperparams = kwargs["hyperparams"]
     window_size = kwargs["window_size"]
     model_type = kwargs["model_type"]
-    data_dir = (
-        os.path.join(os.environ["VSC_DATA"], "data")
-        if cluster
-        else os.path.abs("./data")
-    )
 
     return_last_only = True
 
