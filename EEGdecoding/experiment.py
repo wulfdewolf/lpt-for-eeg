@@ -210,7 +210,7 @@ def experiment(exp_name, exp_args, **kwargs):
             num_samples=10,
             scheduler=scheduler,
             progress_reporter=reporter,
-            local_dir=model_dir,
+            local_dir=os.path.join(model_dir, "optimisation"),
         )
 
         # Print and save results
@@ -237,7 +237,7 @@ def experiment(exp_name, exp_args, **kwargs):
                 with open(
                     os.path.join(
                         model_dir,
-                        f"models/{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
+                        f"{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
                     ),
                     "wb",
                 ) as f:
@@ -279,7 +279,7 @@ def experiment(exp_name, exp_args, **kwargs):
                 or (iter + 1) == exp_args["num_iters"]
             ):
                 with open(
-                    os.path.join(model_dir, f"models/{group_name}-{model_name}.pt"),
+                    os.path.join(model_dir, f"{group_name}-{model_name}.pt"),
                     "wb",
                 ) as f:
                     state_dict = dict(
