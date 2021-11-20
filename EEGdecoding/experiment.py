@@ -28,8 +28,10 @@ def experiment(exp_name, exp_args, **kwargs):
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
         data_dir = os.path.join(os.environ["VSC_DATA"], "data")
+        model_dir = os.environ["VSC_DATA"]
     else:
         data_dir = os.path.abspath("./data")
+        model_dir = "."
 
     print(data_dir)
 
@@ -206,7 +208,7 @@ def experiment(exp_name, exp_args, **kwargs):
             num_samples=10,
             scheduler=scheduler,
             progress_reporter=reporter,
-            local_dir="optimisation_results",
+            local_dir=model_dir,
         )
 
         # Print and save results
@@ -231,7 +233,10 @@ def experiment(exp_name, exp_args, **kwargs):
 
             if save_models:
                 with open(
-                    f"models/{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
+                    os.path.join(
+                        model_dir,
+                        f"models/{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
+                    ),
                     "wb",
                 ) as f:
                     state_dict = dict(model=model_state, optim=optimizer_state)
@@ -271,7 +276,10 @@ def experiment(exp_name, exp_args, **kwargs):
                 (iter + 1) % exp_args["save_models_every"] == 0
                 or (iter + 1) == exp_args["num_iters"]
             ):
-                with open(f"models/{group_name}-{model_name}.pt", "wb") as f:
+                with open(
+                    os.path.join(model_dir, f"models/{group_name}-{model_name}.pt"),
+                    "wb",
+                ) as f:
                     state_dict = dict(
                         model=model.state_dict(), optim=trainer.optim.state_dict()
                     )
