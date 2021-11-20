@@ -96,12 +96,10 @@ class EEGDataset(Dataset):
         from braindecode.datasets.moabb import MOABBDataset
 
         subject_id = 3
-        print(os.environ["MNE_DATA"])
         dataset = MOABBDataset(
             dataset_name=self.dataset_name,
             subject_ids=[subject_id],
         )
-        print(os.environ["MNE_DATA"])
 
         """
         Preprocessing
