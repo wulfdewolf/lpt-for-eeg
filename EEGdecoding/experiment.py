@@ -23,7 +23,8 @@ from ray.tune.schedulers import ASHAScheduler
 def experiment(exp_name, exp_args, **kwargs):
 
     # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
-    if exp_args["cluster"]:
+    cluster = exp_args["cluster"]
+    if cluster:
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
@@ -47,7 +48,11 @@ def experiment(exp_name, exp_args, **kwargs):
     hyperparams = kwargs["hyperparams"]
     window_size = kwargs["window_size"]
     model_type = kwargs["model_type"]
-    data_dir = os.path.abspath("./data")
+    data_dir = (
+        os.path.join(os.environ["VSC_DATA", "data"])
+        if cluster
+        else os.path.abs("./data")
+    )
 
     return_last_only = True
 

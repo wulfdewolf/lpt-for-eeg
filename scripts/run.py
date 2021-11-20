@@ -11,7 +11,7 @@ if __name__ == "__main__":
         task="BCI_Competition_IV_2a",
         window_size=1000,
         # Model
-        model_type="CNN",
+        model_type="FPT",
         model_name="gpt2",
         # Pretraining
         pretrained=True,  # if vit this is forced to true, if lstm this is forced to false
