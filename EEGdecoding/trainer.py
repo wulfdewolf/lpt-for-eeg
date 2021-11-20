@@ -1,3 +1,4 @@
+from numpy.core.einsumfunc import _optimal_path
 import torch
 from tqdm import tqdm
 
@@ -37,7 +38,7 @@ class Trainer:
     def get_loss(self, x, y, return_acc=False):
         out = self.model(x)
 
-        if self.model_type == "EEG":
+        if self.model_type == "CNN":
             out = out[
                 :, None, :
             ]  # braindecode uses a different format, extra nested level is needed around the predicted class probs
@@ -54,7 +55,7 @@ class Trainer:
             return loss, accs
         return loss
 
-    def train_epoch(self, test_steps=None):
+    def train_epoch(self, epoch, test_steps=None):
         self.dataset.start_epoch()
 
         train_losses, tr_accuracy = [], 0.0
@@ -92,6 +93,7 @@ class Trainer:
                 accuracy += acc / test_steps
         end_test_time = time.time()
 
+        # Wandb diagnostics tracking
         self.diagnostics["Average Train Loss"] = (
             sum(train_losses) / self.steps_per_epoch
         )
@@ -104,3 +106,5 @@ class Trainer:
         )
         self.diagnostics["Time Training"] = end_train_time - start_train_time
         self.diagnostics["Time Testing"] = end_test_time - start_test_time
+
+        return test_loss, accuracy

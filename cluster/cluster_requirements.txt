@@ -1,5 +1,3 @@
 transformers
 moabb
 braindecode
-einops
-

@@ -1,7 +1,7 @@
-from einops import rearrange
 from torch.utils.data import DataLoader
-import torchvision
-import torchvision.transforms as transforms
+from braindecode.datautil.serialization import load_concat_dataset
+import numpy as np
+import os
 
 """
 Create Dataset object
@@ -10,19 +10,87 @@ from EEGdecoding.datasets.dataset import Dataset
 
 
 class EEGDataset(Dataset):
-    def __init__(self, batch_size, seed, window_size=None, *args, **kwargs):
+    def __init__(self, task, batch_size, seed, data_dir, window_size=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.batch_size = batch_size
         self.window_size = window_size
+        self.data_dir = data_dir
+        self.task = task
+
+        # Map task to MOABB dataset name
+        if task == 'BCI_Competition_IV_2a':
+            self.dataset_name = 'BNCI2014001'
+            self.classes = 4
+        else:
+            raise NotImplementedError("The dataset (identifier) for this task has not been implemented!")
+
+        # Load processed data if it exists
+        try:
+            windows_dataset = load_concat_dataset(path=os.path.join(self.data_dir, self.dataset_name), preload=True)
+        except: 
+            self.process()
+            windows_dataset = load_concat_dataset(path=os.path.join(self.data_dir, self.dataset_name), preload=True)
 
         """
-        Loading dataset
+        Split
+        """
+        splitted = windows_dataset.split("session")
+
+        """
+        Set worker seeds for reproducibility
+        """
+        import torch
+        import random
+
+        def seed_worker(worker_id):
+            torch.manual_seed(seed)
+            random.seed(seed)
+            np.random.seed(seed)
+
+        g = torch.Generator()
+        g.manual_seed(seed)
+
+        """
+        Data loader
+        """
+        self.d_train = DataLoader(
+            splitted["session_T"],
+            batch_size=batch_size,
+            drop_last=True,
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=g,
+        )
+        self.d_test = DataLoader(
+            splitted["session_E"],
+            batch_size=batch_size,
+            drop_last=True,
+            shuffle=True,
+            worker_init_fn=seed_worker,
+            generator=g,
+        )
+
+        # Store channels and classes
+        self.n_channels = splitted["session_T"][0][0].shape[0]
+        self.input_window_samples = splitted["session_T"][0][0].shape[1]
+
+        self.train_enum = enumerate(self.d_train)
+        self.test_enum = enumerate(self.d_test)
+
+    def process(self):
+
+        """
+        Downloading dataset
+
+        !! downloads to ~/mne_data, after calling the process function once, this folder can be removed
         """
         from braindecode.datasets.moabb import MOABBDataset
 
         subject_id = 3
-        dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=[subject_id])
+        dataset = MOABBDataset(
+            dataset_name=self.dataset_name, subject_ids=[subject_id],
+        )
 
         """
         Preprocessing
@@ -73,13 +141,13 @@ class EEGDataset(Dataset):
         trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
 
         # Create windows using braindecode function for this.
-        if window_size is not None:
+        if self.window_size is not None:
             # Cropped
             windows_dataset = create_windows_from_events(
                 dataset,
                 trial_start_offset_samples=trial_start_offset_samples,
                 trial_stop_offset_samples=0,
-                window_size_samples=window_size,
+                window_size_samples=self.window_size,
                 window_stride_samples=10,
                 drop_last_window=False,
                 preload=True,
@@ -94,50 +162,10 @@ class EEGDataset(Dataset):
             )
 
         """
-        Split
+        Saving to folder
         """
-        splitted = windows_dataset.split("session")
+        windows_dataset.save(path=os.path.join(self.data_dir, self.dataset_name), overwrite=True)
 
-        """
-        Set worker seeds for reproducibility
-        """
-        import torch
-        import random
-
-        def seed_worker(worker_id):
-            torch.manual_seed(seed)
-            random.seed(seed)
-            np.random.seed(seed)
-
-        g = torch.Generator()
-        g.manual_seed(seed)
-
-        """
-        Data loader
-        """
-        self.d_train = DataLoader(
-            splitted["session_T"],
-            batch_size=batch_size,
-            drop_last=True,
-            shuffle=True,
-            worker_init_fn=seed_worker,
-            generator=g,
-        )
-        self.d_test = DataLoader(
-            splitted["session_E"],
-            batch_size=batch_size,
-            drop_last=True,
-            shuffle=True,
-            worker_init_fn=seed_worker,
-            generator=g,
-        )
-
-        # Store channels and classes
-        self.n_channels = splitted["session_T"][0][0].shape[0]
-        self.input_window_samples = splitted["session_T"][0][0].shape[1]
-
-        self.train_enum = enumerate(self.d_train)
-        self.test_enum = enumerate(self.d_test)
 
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(
