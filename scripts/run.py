@@ -1,4 +1,5 @@
 from EEGdecoding.experiment import run_experiment
+from ray import tune
 
 if __name__ == "__main__":
 
@@ -25,9 +26,9 @@ if __name__ == "__main__":
         # Parameters
         optimise=True,
         hyperparams=dict(
-            learning_rate=1e-2,
-            batch_size=16,
-            dropout=0.1,
+            learning_rate=tune.loguniform(1e-4, 1e-1),
+            batch_size=tune.choice([2, 4, 8, 16]),
+            dropout=tune.loguniform(0.1, 1),
             orth_gain=1.41,  # orthogonal initialization of input layer
         ),
     )

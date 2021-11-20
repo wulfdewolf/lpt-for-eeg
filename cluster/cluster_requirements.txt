@@ -1,3 +1,5 @@
 transformers
 moabb
 braindecode
+ray
+hiredis
