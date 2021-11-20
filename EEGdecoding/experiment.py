@@ -49,7 +49,7 @@ def experiment(exp_name, exp_args, **kwargs):
     window_size = kwargs["window_size"]
     model_type = kwargs["model_type"]
     data_dir = (
-        os.path.join(os.environ["VSC_DATA", "data"])
+        os.path.join(os.environ["VSC_DATA"], "data")
         if cluster
         else os.path.abs("./data")
     )
