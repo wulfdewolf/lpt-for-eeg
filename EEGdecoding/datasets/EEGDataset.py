@@ -10,7 +10,9 @@ from EEGdecoding.datasets.dataset import Dataset
 
 
 class EEGDataset(Dataset):
-    def __init__(self, task, batch_size, seed, data_dir, window_size=None, *args, **kwargs):
+    def __init__(
+        self, task, batch_size, seed, data_dir, window_size=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         self.batch_size = batch_size
@@ -19,18 +21,24 @@ class EEGDataset(Dataset):
         self.task = task
 
         # Map task to MOABB dataset name
-        if task == 'BCI_Competition_IV_2a':
-            self.dataset_name = 'BNCI2014001'
+        if task == "BCI_Competition_IV_2a":
+            self.dataset_name = "BNCI2014001"
             self.classes = 4
         else:
-            raise NotImplementedError("The dataset (identifier) for this task has not been implemented!")
+            raise NotImplementedError(
+                "The dataset (identifier) for this task has not been implemented!"
+            )
 
         # Load processed data if it exists
         try:
-            windows_dataset = load_concat_dataset(path=os.path.join(self.data_dir, self.dataset_name), preload=True)
-        except: 
+            windows_dataset = load_concat_dataset(
+                path=os.path.join(self.data_dir, self.dataset_name), preload=True
+            )
+        except:
             self.process()
-            windows_dataset = load_concat_dataset(path=os.path.join(self.data_dir, self.dataset_name), preload=True)
+            windows_dataset = load_concat_dataset(
+                path=os.path.join(self.data_dir, self.dataset_name), preload=True
+            )
 
         """
         Split
@@ -88,9 +96,12 @@ class EEGDataset(Dataset):
         from braindecode.datasets.moabb import MOABBDataset
 
         subject_id = 3
+        print(os.environ["MNE_DATA"])
         dataset = MOABBDataset(
-            dataset_name=self.dataset_name, subject_ids=[subject_id],
+            dataset_name=self.dataset_name,
+            subject_ids=[subject_id],
         )
+        print(os.environ["MNE_DATA"])
 
         """
         Preprocessing
@@ -164,8 +175,9 @@ class EEGDataset(Dataset):
         """
         Saving to folder
         """
-        windows_dataset.save(path=os.path.join(self.data_dir, self.dataset_name), overwrite=True)
-
+        windows_dataset.save(
+            path=os.path.join(self.data_dir, self.dataset_name), overwrite=True
+        )
 
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(

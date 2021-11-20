@@ -29,7 +29,7 @@ def experiment(exp_name, exp_args, **kwargs):
         torch.set_num_interop_threads(1)
         data_dir = os.path.join(os.environ["VSC_DATA"], "data")
     else:
-        data_dir = os.path.abs("./data")
+        data_dir = os.path.abspath("./data")
 
     # Generate id for run before setting seed
     rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
