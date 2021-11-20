@@ -22,18 +22,20 @@ from ray.tune.schedulers import ASHAScheduler
 
 def experiment(exp_name, exp_args, **kwargs):
 
-    # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
+    # Cluster specific things
     cluster = exp_args["cluster"]
     if cluster:
+
+        # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
+
+        # Data dirs
         data_dir = os.path.join(os.environ["VSC_DATA"], "data")
-        model_dir = os.environ["VSC_DATA"]
+        model_dir = os.path.join(os.environ["VSC_DATA"], "models")
     else:
         data_dir = os.path.abspath("./data")
-        model_dir = "."
-
-    print(data_dir)
+        model_dir = os.path.abspath("./models")
 
     # Generate id for run before setting seed
     rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
