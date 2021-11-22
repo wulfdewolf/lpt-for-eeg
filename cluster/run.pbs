@@ -12,6 +12,6 @@ module load wandb/0.12.5-GCCcore-10.2.0
 cd ~/fpt-for-eeg
 export PYTHONPATH=$VSC_HOME/fpt-for-eeg:$PYTHONPATH
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
-export MNE_DATASETS_BNCI2014001_PATH=$VSC_DATA/mne_data
+export MNE_DATA=$VSC_DATA/mne_data
 
 python scripts/run.py --cluster 

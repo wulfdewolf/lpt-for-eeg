@@ -6,7 +6,7 @@ import os
 """
 Create Dataset object
 """
-from EEGdecoding.datasets.dataset import Dataset
+from src.datasets.dataset import Dataset
 
 
 class EEGDataset(Dataset):

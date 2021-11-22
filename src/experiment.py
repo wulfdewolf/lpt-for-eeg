@@ -11,9 +11,9 @@ import sys
 import string
 from braindecode.models import ShallowFBCSPNet
 
-from EEGdecoding.models.fpt import FPT
-from EEGdecoding.trainer import Trainer
-from EEGdecoding.datasets.EEGDataset import EEGDataset
+from src.models.fpt import FPT
+from src.trainer import Trainer
+from src.datasets.EEGDataset import EEGDataset
 
 from ray import tune
 from ray.tune import CLIReporter
@@ -22,8 +22,13 @@ from ray.tune.schedulers import ASHAScheduler
 
 def experiment(exp_name, exp_args, **kwargs):
 
-    # Cluster specific things
+    # Extract decision bools
     cluster = exp_args["cluster"]
+    optimise = exp_args["optimise"]
+    log_to_wandb = exp_args["log_to_wandb"]
+    save_models = exp_args["save_models"]
+
+    # Cluster specific things
     if cluster:
 
         # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
@@ -38,7 +43,8 @@ def experiment(exp_name, exp_args, **kwargs):
         model_dir = os.path.abspath("./models")
 
     # Generate id for run before setting seed
-    rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    if not optimise:
+        rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     """
     Set seeds for reproducibility
@@ -53,7 +59,6 @@ def experiment(exp_name, exp_args, **kwargs):
     """
 
     task = kwargs["task"]
-    optimise = kwargs["optimise"]
     hyperparams = kwargs["hyperparams"]
     window_size = kwargs["window_size"]
     model_type = kwargs["model_type"]
@@ -72,7 +77,7 @@ def experiment(exp_name, exp_args, **kwargs):
         return (preds == true).mean()
 
     # Function
-    def train_fn(hyperparams, logging_fn=None, log_to_wandb=False, checkpoint_dir=None):
+    def train_fn(hyperparams, logging_fn=None):
 
         # Must be able to accumulate gradient if batch size is large
         assert "batch_size" in hyperparams
@@ -155,14 +160,6 @@ def experiment(exp_name, exp_args, **kwargs):
             else 1,
         )
 
-        # Checkpoint loads
-        if checkpoint_dir:
-            model_state, optimizer_state = torch.load(
-                os.path.join(checkpoint_dir, "checkpoint")
-            )
-            model.load_state_dict(model_state)
-            trainer.optim.load_state_dict(optimizer_state)
-
         # Training
         for iter in range(exp_args["num_iters"]):
 
@@ -172,18 +169,13 @@ def experiment(exp_name, exp_args, **kwargs):
             # Log to wandb and/or terminal
             if logging_fn is not None:
                 logging_fn(iter, model, trainer)
+            # Log to tune
             if optimise:
-                with tune.checkpoint_dir(iter) as checkpoint_dir:
-                    path = os.path.join(checkpoint_dir, "checkpoint")
-                    torch.save((model.state_dict(), trainer.optim.state_dict()), path)
-
                 tune.report(loss=test_loss, accuracy=accuracy)
 
     """
     Training
     """
-    log_to_wandb = exp_args["log_to_wandb"]
-    save_models = exp_args["save_models"]
     wandb_project = exp_args["wandb_project"]
 
     if optimise:
@@ -226,26 +218,6 @@ def experiment(exp_name, exp_args, **kwargs):
                 best_trial.last_result["accuracy"]
             )
         )
-
-        if best_trial is not None:
-            best_checkpoint_dir = best_trial.checkpoint.value
-            model_state, optimizer_state = torch.load(
-                os.path.join(best_checkpoint_dir, "checkpoint")
-            )
-
-            if save_models:
-                with open(
-                    os.path.join(
-                        model_dir,
-                        f"{exp_name}-{task}-{model_type}-{best_trial.config}.pt",
-                    ),
-                    "wb",
-                ) as f:
-                    state_dict = dict(model=model_state, optim=optimizer_state)
-                    torch.save(state_dict, f)
-                print(
-                    f"Saved optimised: {exp_name}-{task}-{model_type}-{best_trial.config}"
-                )
 
     else:
 

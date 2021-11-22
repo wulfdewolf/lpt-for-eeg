@@ -1,8 +1,6 @@
-from numpy.core.einsumfunc import _optimal_path
 import torch
-from tqdm import tqdm
-
 import time
+from tqdm import tqdm
 
 
 class Trainer:
