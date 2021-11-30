@@ -13,7 +13,8 @@ from braindecode.models import ShallowFBCSPNet
 
 from src.models.fpt import FPT
 from src.trainer import Trainer
-from src.datasets.EEGDataset import EEGDataset
+from src.datasets.CNNDataset import CNNDataset
+from src.datasets.FPTDataset import FPTDataset
 
 from ray import tune
 from ray.tune import CLIReporter
@@ -23,8 +24,9 @@ from ray.tune.schedulers import ASHAScheduler
 def experiment(exp_name, exp_args, **kwargs):
 
     # Extract decision bools
+    print(exp_args)
     cluster = exp_args["cluster"]
-    optimise = exp_args["optimise"]
+    optimise = kwargs["optimise"]
     log_to_wandb = exp_args["log_to_wandb"]
     save_models = exp_args["save_models"]
 
@@ -69,6 +71,7 @@ def experiment(exp_name, exp_args, **kwargs):
     ce_loss = torch.nn.CrossEntropyLoss()
 
     def loss_fn(out, y, x=None):
+        print(out.shape)
         out = out[:, 0]
         return ce_loss(out, y)
 
@@ -77,7 +80,7 @@ def experiment(exp_name, exp_args, **kwargs):
         return (preds == true).mean()
 
     # Function
-    def train_fn(hyperparams, logging_fn=None):
+    def train_fn(hyperparams, logging_fn=None, log_to_wandb=False):
 
         # Must be able to accumulate gradient if batch size is large
         assert "batch_size" in hyperparams
@@ -93,33 +96,50 @@ def experiment(exp_name, exp_args, **kwargs):
             device = "cuda:0"
 
         # Dataset
-        dataset = EEGDataset(
-            task=task,
-            batch_size=batch_size,
-            seed=seed,
-            window_size=window_size,
-            device=device,
-            data_dir=data_dir,
-        )
-        input_dim, output_dim = window_size, dataset.classes
-        use_embeddings = False
 
-        # Model
+        # Model and dataset
         if model_type == "CNN":
+
+            # Dataset
+            dataset = CNNDataset(
+                task=task,
+                batch_size=batch_size,
+                seed=seed,
+                window_size=window_size,
+                device=device,
+                data_dir=data_dir,
+            )
+            input_dim, output_dim = window_size, dataset.classes
+
+            # Model
             model = ShallowFBCSPNet(
                 dataset.n_channels,
                 output_dim,
                 input_window_samples=input_dim,
                 final_conv_length="auto",
             )
+
         elif model_type == "FPT":
+
+            # Dataset
+            dataset = FPTDataset(
+                task=task,
+                batch_size=batch_size,
+                seed=seed,
+                window_size=window_size,
+                device=device,
+                data_dir=data_dir,
+            )
+            input_dim, output_dim = dataset.n_channels, dataset.classes
+
+            # Model
             model = FPT(
                 input_dim=input_dim,
                 output_dim=output_dim,
                 model_name=kwargs.get("model_name", "gpt2"),
                 pretrained=kwargs.get("pretrained", True),
                 return_last_only=return_last_only,
-                use_embeddings_for_in=use_embeddings,
+                use_embeddings_for_in=False,
                 in_layer_sizes=kwargs.get("in_layer_sizes", None),
                 out_layer_sizes=kwargs.get("out_layer_sizes", None),
                 freeze_trans=kwargs.get("freeze_trans", True),

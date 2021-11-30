@@ -3,26 +3,25 @@ import torch.nn as nn
 
 
 class FPT(nn.Module):
-
     def __init__(
-            self,
-            input_dim,
-            output_dim,
-            model_name='gpt2',
-            pretrained=False,
-            return_last_only=True,
-            use_embeddings_for_in=False,
-            in_layer_sizes=None,
-            out_layer_sizes=None,
-            freeze_trans=True,
-            freeze_in=False,
-            freeze_pos=False,
-            freeze_ln=False,
-            freeze_attn=True,
-            freeze_ff=True,
-            freeze_out=False,
-            dropout=0.1,
-            orth_gain=1.41,
+        self,
+        input_dim,
+        output_dim,
+        model_name="gpt2",
+        pretrained=False,
+        return_last_only=True,
+        use_embeddings_for_in=False,
+        in_layer_sizes=None,
+        out_layer_sizes=None,
+        freeze_trans=True,
+        freeze_in=False,
+        freeze_pos=False,
+        freeze_ln=False,
+        freeze_attn=True,
+        freeze_ff=True,
+        freeze_out=False,
+        dropout=0.1,
+        orth_gain=1.41,
     ):
         super().__init__()
 
@@ -36,8 +35,8 @@ class FPT(nn.Module):
         self.out_layer_sizes = [] if out_layer_sizes is None else out_layer_sizes
         self.dropout = dropout
 
-        if 'gpt' in model_name:
-            assert model_name in ['gpt2', 'gpt2-medium', 'gpt2-large', 'gpt2-xl']
+        if "gpt" in model_name:
+            assert model_name in ["gpt2", "gpt2-medium", "gpt2-large", "gpt2-xl"]
 
             from transformers import GPT2Model
 
@@ -47,21 +46,24 @@ class FPT(nn.Module):
             else:
                 self.sequence_model = GPT2Model(pretrained_transformer.config)
 
-            if model_name == 'gpt2':
+            if model_name == "gpt2":
                 embedding_size = 768
-            elif model_name == 'gpt2-medium':
+            elif model_name == "gpt2-medium":
                 embedding_size = 1024
-            elif model_name == 'gpt2-large':
+            elif model_name == "gpt2-large":
                 embedding_size = 1280
-            elif model_name == 'gpt2-xl':
+            elif model_name == "gpt2-xl":
                 embedding_size = 1600
 
-        elif model_name == 'vit':
+        elif model_name == "vit":
 
             import timm
 
             self.sequence_model = timm.create_model(
-                'vit_base_patch16_224', pretrained=pretrained, drop_rate=dropout, attn_drop_rate=dropout,
+                "vit_base_patch16_224",
+                pretrained=pretrained,
+                drop_rate=dropout,
+                attn_drop_rate=dropout,
             )
             embedding_size = 768
 
@@ -69,7 +71,7 @@ class FPT(nn.Module):
             if freeze_pos:
                 self.vit_pos_embed.requires_grad = False
 
-        elif model_name == 'lstm':
+        elif model_name == "lstm":
 
             from universal_computation.models.lstm import LNLSTM
 
@@ -91,7 +93,7 @@ class FPT(nn.Module):
             #     self.lstm_pos_embed.requires_grad = False
 
         else:
-            raise NotImplementedError('model_name not implemented')
+            raise NotImplementedError("model_name not implemented")
 
         if use_embeddings_for_in:
             self.in_net = nn.Embedding(input_dim, embedding_size)
@@ -132,13 +134,15 @@ class FPT(nn.Module):
         if freeze_trans:
             for name, p in self.sequence_model.named_parameters():
                 name = name.lower()
-                if 'ln' in name or 'norm' in name:
+                if "ln" in name or "norm" in name:
                     p.requires_grad = not freeze_ln
-                elif 'wpe' in name or 'position_embeddings' in name or 'pos_drop' in name:
+                elif (
+                    "wpe" in name or "position_embeddings" in name or "pos_drop" in name
+                ):
                     p.requires_grad = not freeze_pos
-                elif 'mlp' in name:
+                elif "mlp" in name:
                     p.requires_grad = not freeze_ff
-                elif 'attn' in name:
+                elif "attn" in name:
                     p.requires_grad = not freeze_attn
                 else:
                     p.requires_grad = False
@@ -155,25 +159,27 @@ class FPT(nn.Module):
         orig_dim = x.shape[-1]
         if orig_dim != self.input_dim and not self.use_embeddings_for_in:
             if orig_dim % self.input_dim != 0:
-                raise ValueError('dimension of x must be divisible by patch size')
+                raise ValueError("dimension of x must be divisible by patch size")
             ratio = orig_dim // self.input_dim
             x = x.reshape(x.shape[0], x.shape[1] * ratio, self.input_dim)
         else:
             ratio = 1
 
+        print(x.shape)
         x = self.in_net(x)
 
         # ignore input layer that comes with model and use our own embeddings
-        if self.model_name == 'vit':
-            x = x + self.vit_pos_embed[:, :x.shape[1]]
+        if self.model_name == "vit":
+            x = x + self.vit_pos_embed[:, : x.shape[1]]
             x = self.sequence_model.pos_drop(x)
             for blk in self.sequence_model.blocks:
                 x = blk(x)
             x = self.sequence_model.norm(x)
-        elif self.model_name == 'lstm':
+        elif self.model_name == "lstm":
             # x = x + self.lstm_pos_embed[:, :x.shape[1]]
             x, *_ = self.sequence_model(x)
         else:
+            print(x.shape)
             transformer_outputs = self.sequence_model(
                 inputs_embeds=x,
                 return_dict=True,
@@ -182,7 +188,7 @@ class FPT(nn.Module):
 
         # take final hidden state of tokens corresponding to last patch
         if self.return_last_only:
-            x = x[:,-ratio:]
+            x = x[:, -ratio:]
 
         # single linear layer applied to last hidden state
         x = self.out_net(x)

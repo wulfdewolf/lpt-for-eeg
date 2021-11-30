@@ -14,7 +14,7 @@ if __name__ == "__main__":
         model_type="FPT",
         model_name="gpt2",
         # Pretraining
-        pretrained=True,
+        pretrained=False,
         # Freezing
         freeze_trans=True,
         freeze_in=False,
@@ -24,12 +24,19 @@ if __name__ == "__main__":
         freeze_ff=True,
         freeze_out=False,
         # Hyper parameters
-        optimise=True,  # Whether or not a hyperparameters should be optimised
+        # optimise=True,  # Whether or not a hyperparameters should be optimised
+        # hyperparams=dict(
+        #    learning_rate=tune.loguniform(1e-4, 1e-1),
+        #    batch_size=tune.choice([2, 4, 8, 16]),
+        #    dropout=tune.loguniform(0.1, 1),
+        #    orth_gain=tune.loguniform(0.1, 3),
+        # ),
+        optimise=False,  # Whether or not a hyperparameters should be optimised
         hyperparams=dict(
-            learning_rate=tune.loguniform(1e-4, 1e-1),
-            batch_size=tune.choice([2, 4, 8, 16]),
-            dropout=tune.loguniform(0.1, 1),
-            orth_gain=tune.loguniform(0.1, 3),
+            learning_rate=0.01,
+            batch_size=2,
+            dropout=0.1,
+            orth_gain=0.1,
         ),
     )
 
