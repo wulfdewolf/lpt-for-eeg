@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import os
-from torch.utils import data
 import wandb
 
 import argparse
@@ -19,12 +18,12 @@ from src.datasets.FPTDataset import FPTDataset
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
+from functools import partial
 
 
 def experiment(exp_name, exp_args, **kwargs):
 
     # Extract decision bools
-    print(exp_args)
     cluster = exp_args["cluster"]
     optimise = kwargs["optimise"]
     log_to_wandb = exp_args["log_to_wandb"]
@@ -43,10 +42,6 @@ def experiment(exp_name, exp_args, **kwargs):
     else:
         data_dir = os.path.abspath("./data")
         model_dir = os.path.abspath("./models")
-
-    # Generate id for run before setting seed
-    if not optimise:
-        rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     """
     Set seeds for reproducibility
@@ -71,7 +66,6 @@ def experiment(exp_name, exp_args, **kwargs):
     ce_loss = torch.nn.CrossEntropyLoss()
 
     def loss_fn(out, y, x=None):
-        print(out.shape)
         out = out[:, 0]
         return ce_loss(out, y)
 
@@ -81,6 +75,7 @@ def experiment(exp_name, exp_args, **kwargs):
 
     # Function
     def train_fn(hyperparams, logging_fn=None, log_to_wandb=False):
+        rid = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
         # Must be able to accumulate gradient if batch size is large
         assert "batch_size" in hyperparams
@@ -160,6 +155,29 @@ def experiment(exp_name, exp_args, **kwargs):
         model.to(device)
 
         if log_to_wandb:
+            kwargs["hyperparams"] = hyperparams
+            config = dict(
+                **exp_args,
+                **kwargs,
+            )
+            if optimise:
+                group_name = f"{exp_name}-{task}-{model_type}-optimisation"
+                model_name = f"{rid}"
+                wandb.init(
+                    name=model_name,
+                    group=group_name,
+                    project=wandb_project,
+                    config=config,
+                )
+            else:
+                group_name = f"{exp_name}-{task}"
+                model_name = f"{model_type}-{rid}"
+                wandb.init(
+                    name=model_name,
+                    group=group_name,
+                    project=wandb_project,
+                    config=config,
+                )
             wandb.watch(model)
 
         # Trainer
@@ -186,9 +204,14 @@ def experiment(exp_name, exp_args, **kwargs):
             # Train single epoch
             test_loss, accuracy = trainer.train_epoch(iter)
 
-            # Log to wandb and/or terminal
+            # Log to wandb
+            if log_to_wandb:
+                wandb.log(trainer.diagnostics)
+
+            # Log to terminal
             if logging_fn is not None:
-                logging_fn(iter, model, trainer)
+                logging_fn(iter, model, trainer, rid)
+
             # Log to tune
             if optimise:
                 tune.report(loss=test_loss, accuracy=accuracy)
@@ -216,8 +239,8 @@ def experiment(exp_name, exp_args, **kwargs):
 
         # Optimisation
         result = tune.run(
-            train_fn,
-            resources_per_trial={"cpu": 4, "gpu": 1},
+            partial(train_fn, log_to_wandb=log_to_wandb),
+            resources_per_trial={"cpu": 1, "gpu": 0},
             config=hyperparams,
             num_samples=10,
             scheduler=scheduler,
@@ -227,58 +250,43 @@ def experiment(exp_name, exp_args, **kwargs):
 
         # Print and save results
         best_trial = result.get_best_trial("loss", "min", "last")
-        print("Best trial config: {}".format(best_trial.config))
-        print(
-            "Best trial final validation loss: {}".format(
-                best_trial.last_result["loss"]
+        if result.config is not None:
+            print("Best trial config: {}".format(best_trial.config))
+            print(
+                "Best trial final validation loss: {}".format(
+                    best_trial.last_result["loss"]
+                )
             )
-        )
-        print(
-            "Best trial final validation accuracy: {}".format(
-                best_trial.last_result["accuracy"]
+            print(
+                "Best trial final validation accuracy: {}".format(
+                    best_trial.last_result["accuracy"]
+                )
             )
-        )
 
     else:
 
-        # WanDB logger
-        group_name = f"{exp_name}-{task}"
-        model_name = f"{model_type}-{rid}"
-        if log_to_wandb:
-            config = dict(
-                **exp_args,
-                **kwargs,
-            )
-            wandb.init(
-                name=model_name,
-                group=group_name,
-                project=wandb_project,
-                config=config,
-            )
-
-        def logging_fn(iter, model, trainer):
+        def logging_fn(iter, model, trainer, rid):
             print("=" * 57)
             print(f'| Iteration {" " * 15} | {iter+1:25} |')
             for k, v in trainer.diagnostics.items():
                 print(f"| {k:25} | {v:25} |")
             print("=" * 57)
 
-            if log_to_wandb:
-                wandb.log(trainer.diagnostics)
-
             if save_models and (
                 (iter + 1) % exp_args["save_models_every"] == 0
                 or (iter + 1) == exp_args["num_iters"]
             ):
                 with open(
-                    os.path.join(model_dir, f"{group_name}-{model_name}.pt"),
+                    os.path.join(model_dir, f"{exp_name}-{task}-{model_type}-{rid}.pt"),
                     "wb",
                 ) as f:
                     state_dict = dict(
                         model=model.state_dict(), optim=trainer.optim.state_dict()
                     )
                     torch.save(state_dict, f)
-                print(f"Saved model at {iter+1} iters: {group_name}-{model_name}")
+                print(
+                    f"Saved model at {iter+1} iters: {exp_name}-{task}-{model_type}-{rid}"
+                )
 
         # Experiment
         train_fn(hyperparams, logging_fn=logging_fn, log_to_wandb=log_to_wandb)

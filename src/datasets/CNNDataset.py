@@ -11,6 +11,9 @@ from src.datasets.dataset import Dataset
 
 
 class CNNDataset(Dataset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model_type="CNN", *args, **kwargs)
+
     def process(self):
 
         """
@@ -75,9 +78,7 @@ class CNNDataset(Dataset):
         """
         Saving to folder
         """
-        windows_dataset.save(
-            path=os.path.join(self.data_dir, self.dataset_name), overwrite=True
-        )
+        windows_dataset.save(path=self.data_dir, overwrite=True)
 
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(

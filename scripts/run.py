@@ -11,10 +11,10 @@ if __name__ == "__main__":
         task="BCI_Competition_IV_2a",
         window_size=1000,
         # Model
-        model_type="FPT",
+        model_type="CNN",
         model_name="gpt2",
         # Pretraining
-        pretrained=False,
+        pretrained=True,
         # Freezing
         freeze_trans=True,
         freeze_in=False,

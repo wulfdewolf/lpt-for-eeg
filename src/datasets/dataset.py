@@ -12,6 +12,7 @@ class Dataset:
         batch_size,
         seed,
         data_dir,
+        model_type,
         window_size=None,
     ):
 
@@ -25,6 +26,7 @@ class Dataset:
         # Map task to MOABB dataset name
         if task == "BCI_Competition_IV_2a":
             self.dataset_name = "BNCI2014001"
+            self.data_dir = os.path.join(data_dir, self.dataset_name, model_type)
             self.classes = 4
         else:
             raise NotImplementedError(
@@ -34,13 +36,15 @@ class Dataset:
         # Load processed data if it exists
         try:
             windows_dataset = load_concat_dataset(
-                path=os.path.join(self.data_dir, self.dataset_name), preload=True
+                path=self.data_dir,
+                preload=True,
             )
         except:
             self.download()
             self.process()
             windows_dataset = load_concat_dataset(
-                path=os.path.join(self.data_dir, self.dataset_name), preload=True
+                path=self.data_dir,
+                preload=True,
             )
 
         """

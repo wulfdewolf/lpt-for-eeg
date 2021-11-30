@@ -165,7 +165,6 @@ class FPT(nn.Module):
         else:
             ratio = 1
 
-        print(x.shape)
         x = self.in_net(x)
 
         # ignore input layer that comes with model and use our own embeddings
@@ -179,7 +178,6 @@ class FPT(nn.Module):
             # x = x + self.lstm_pos_embed[:, :x.shape[1]]
             x, *_ = self.sequence_model(x)
         else:
-            print(x.shape)
             transformer_outputs = self.sequence_model(
                 inputs_embeds=x,
                 return_dict=True,

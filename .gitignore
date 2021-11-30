@@ -3,4 +3,5 @@
 **/wandb
 **/data
 **/.vscode
-**/optimisation_results
+**/optimisation
+**/models

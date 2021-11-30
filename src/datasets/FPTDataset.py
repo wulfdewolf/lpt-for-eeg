@@ -8,6 +8,9 @@ from src.datasets.dataset import Dataset
 
 
 class FPTDataset(Dataset):
+    def __init__(self, *args, **kwargs):
+        super().__init__(model_type="FPT", *args, **kwargs)
+
     def process(self):
 
         """
@@ -63,15 +66,16 @@ class FPTDataset(Dataset):
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
+            window_size_samples=1024,
+            window_stride_samples=1024,
+            drop_last_window=False,
             preload=True,
         )
 
         """
         Saving to folder
         """
-        windows_dataset.save(
-            path=os.path.join(self.data_dir, self.dataset_name), overwrite=True
-        )
+        windows_dataset.save(path=self.data_dir, overwrite=True)
 
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(
@@ -87,6 +91,7 @@ class FPTDataset(Dataset):
 
         # Rearrange
         x = torch.transpose(x, 1, 2)
+        # x = torch.index_select(x, 1, torch.tensor(range(1024)))
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
