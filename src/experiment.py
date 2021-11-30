@@ -240,7 +240,7 @@ def experiment(exp_name, exp_args, **kwargs):
         # Optimisation
         result = tune.run(
             partial(train_fn, log_to_wandb=log_to_wandb),
-            resources_per_trial={"cpu": 1, "gpu": 0},
+            resources_per_trial={"cpu": 4, "gpu": 1},
             config=hyperparams,
             num_samples=10,
             scheduler=scheduler,
