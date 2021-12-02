@@ -47,10 +47,23 @@ class Dataset:
         except:
             self.download()
 
-        # Already cut MEG data
+        # Cut MEG data
         preprocess(
-            self.dataset, [Preprocessor("pick_types", eeg=True, meg=False, stim=False)]
+            self.dataset,
+            [
+                Preprocessor("pick_types", eeg=True, meg=False, stim=False),
+                Preprocessor("resample", sfreq=100),
+            ],
         )
+
+        # Preprocess
+        self.process()
+
+        # Cut windows
+        self.cut_windows()
+
+        # Cut into train and validation split
+        self.split()
 
     # Split into train and validation set
     def split(self):
@@ -129,5 +142,8 @@ class Dataset:
         )
 
     def plot_raw_interactive(self, trial):
-        plot = self.dataset.datasets[trial].raw.plot(block=True)
-        plot.show()
+        self.dataset.datasets[trial].raw.plot(block=True)
+
+    def plot_windows_interactive(self, trial):
+        print(len(self.windows.datasets[trial].windows))
+        self.windows.datasets[trial].windows.plot(block=True)

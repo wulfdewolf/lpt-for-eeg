@@ -1,4 +1,5 @@
 import os
+from braindecode.datautil.windowers import create_fixed_length_windows
 import torch
 
 """
@@ -11,11 +12,8 @@ class FPTDataset(Dataset):
     def __init__(self, *args, **kwargs):
         super().__init__(model_type="FPT", *args, **kwargs)
 
+    # Preprocessing
     def process(self):
-
-        """
-        Preprocessing
-        """
         from braindecode.datautil.preprocess import (
             exponential_moving_standardize,
             preprocess,
@@ -46,10 +44,8 @@ class FPTDataset(Dataset):
         # Transform the data
         preprocess(self.dataset, preprocessors)
 
-        """
-        Cutting compute windows
-        """
-        import numpy as np
+    # Cutting compute windows
+    def cut_windows(self):
         from braindecode.datautil.windowers import create_windows_from_events
 
         trial_start_offset_seconds = -0.5
@@ -62,21 +58,16 @@ class FPTDataset(Dataset):
         trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
 
         # Create windows using braindecode function for this.
-        windows_dataset = create_windows_from_events(
+        self.windows = create_windows_from_events(
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
-            window_size_samples=1024,
-            window_stride_samples=1024,
-            drop_last_window=False,
+            window_size_samples=self.window_size,
+            window_stride_samples=self.window_size,
             preload=True,
         )
 
-        """
-        Saving to folder
-        """
-        windows_dataset.save(path=self.data_dir, overwrite=True)
-
+    # Getting a single batch
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(
             self.train_enum if train else self.test_enum, (None, (None, None, None))
@@ -91,7 +82,6 @@ class FPTDataset(Dataset):
 
         # Rearrange
         x = torch.transpose(x, 1, 2)
-        # x = torch.index_select(x, 1, torch.tensor(range(1024)))
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)

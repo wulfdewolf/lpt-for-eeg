@@ -36,7 +36,6 @@ class CNNDataset(Dataset):
 
     # Cutting compute windows
     def cut_windows(self):
-        import numpy as np
         from braindecode.datautil.windowers import create_windows_from_events
 
         trial_start_offset_seconds = -0.5
@@ -54,7 +53,7 @@ class CNNDataset(Dataset):
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
             window_size_samples=self.window_size,
-            window_stride_samples=10,
+            window_stride_samples=self.window_size,
             drop_last_window=False,
             preload=True,
         )

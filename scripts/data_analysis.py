@@ -1,7 +1,8 @@
 from torch.utils import data
 from src.datasets.CNNDataset import CNNDataset
+from src.datasets.FPTDataset import FPTDataset
 
-dataset = CNNDataset(
+dataset = FPTDataset(
     seed=20200220,
     task="BCI_Competition_IV_2a",
     batch_size=16,
@@ -9,4 +10,4 @@ dataset = CNNDataset(
     device="gpu",
     data_dir="./data",
 )
-dataset.plot_raw_interactive(0)
+dataset.plot_windows_interactive(5)
