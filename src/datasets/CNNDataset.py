@@ -1,12 +1,3 @@
-from torch.utils.data import DataLoader
-from braindecode.datautil.serialization import load_concat_dataset
-import numpy as np
-import os
-import torch
-
-"""
-Create Dataset object
-"""
 from src.datasets.dataset import Dataset
 
 
@@ -14,11 +5,8 @@ class CNNDataset(Dataset):
     def __init__(self, *args, **kwargs):
         super().__init__(model_type="CNN", *args, **kwargs)
 
+    # Preprocessing
     def process(self):
-
-        """
-        Preprocessing
-        """
         from braindecode.datautil.preprocess import (
             exponential_moving_standardize,
             preprocess,
@@ -32,9 +20,6 @@ class CNNDataset(Dataset):
         init_block_size = 1000
 
         preprocessors = [
-            Preprocessor(
-                "pick_types", eeg=True, meg=False, stim=False
-            ),  # Keep EEG sensors
             Preprocessor(lambda x: x * 1e6),  # Convert from V to uV
             Preprocessor(
                 "filter", l_freq=low_cut_hz, h_freq=high_cut_hz
@@ -49,9 +34,8 @@ class CNNDataset(Dataset):
         # Transform the data
         preprocess(self.dataset, preprocessors)
 
-        """
-        Cutting compute windows
-        """
+    # Cutting compute windows
+    def cut_windows(self):
         import numpy as np
         from braindecode.datautil.windowers import create_windows_from_events
 
@@ -65,7 +49,7 @@ class CNNDataset(Dataset):
         trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
 
         # Create windows using braindecode function for this.
-        windows_dataset = create_windows_from_events(
+        self.windows = create_windows_from_events(
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
@@ -75,11 +59,7 @@ class CNNDataset(Dataset):
             preload=True,
         )
 
-        """
-        Saving to folder
-        """
-        windows_dataset.save(path=self.data_dir, overwrite=True)
-
+    # Getting a single batch
     def get_batch(self, batch_size=None, train=True):
         _, (x, y, _) = next(
             self.train_enum if train else self.test_enum, (None, (None, None, None))

@@ -2,6 +2,10 @@ from torch.utils.data import DataLoader
 from braindecode.datautil.serialization import load_concat_dataset
 import numpy as np
 import os
+from braindecode.datautil.preprocess import (
+    preprocess,
+    Preprocessor,
+)
 
 
 class Dataset:
@@ -20,37 +24,37 @@ class Dataset:
         self._ind = 0
         self.batch_size = batch_size
         self.window_size = window_size
+        self.seed = seed
         self.data_dir = data_dir
         self.task = task
 
         # Map task to MOABB dataset name
         if task == "BCI_Competition_IV_2a":
             self.dataset_name = "BNCI2014001"
-            self.data_dir = os.path.join(data_dir, self.dataset_name, model_type)
             self.classes = 4
         else:
             raise NotImplementedError(
                 "The dataset (identifier) for this task has not been implemented!"
             )
+        self.data_dir = os.path.join(data_dir, self.dataset_name, model_type)
 
-        # Load processed data if it exists
+        # Load data if it exists, otherwise download it
         try:
-            windows_dataset = load_concat_dataset(
+            self.dataset = load_concat_dataset(
                 path=self.data_dir,
                 preload=True,
             )
         except:
             self.download()
-            self.process()
-            windows_dataset = load_concat_dataset(
-                path=self.data_dir,
-                preload=True,
-            )
 
-        """
-        Split
-        """
-        splitted = windows_dataset.split("session")
+        # Already cut MEG data
+        preprocess(
+            self.dataset, [Preprocessor("pick_types", eeg=True, meg=False, stim=False)]
+        )
+
+    # Split into train and validation set
+    def split(self):
+        splitted = self.windows.split("session")
 
         """
         Set worker seeds for reproducibility
@@ -59,19 +63,19 @@ class Dataset:
         import random
 
         def seed_worker(worker_id):
-            torch.manual_seed(seed)
-            random.seed(seed)
-            np.random.seed(seed)
+            torch.manual_seed(self.seed)
+            random.seed(self.seed)
+            np.random.seed(self.seed)
 
         g = torch.Generator()
-        g.manual_seed(seed)
+        g.manual_seed(self.seed)
 
         """
         Data loader
         """
         self.d_train = DataLoader(
             splitted["session_T"],
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             drop_last=True,
             shuffle=True,
             worker_init_fn=seed_worker,
@@ -79,7 +83,7 @@ class Dataset:
         )
         self.d_test = DataLoader(
             splitted["session_E"],
-            batch_size=batch_size,
+            batch_size=self.batch_size,
             drop_last=True,
             shuffle=True,
             worker_init_fn=seed_worker,
@@ -93,12 +97,13 @@ class Dataset:
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
+    # Download the dataset and store it
     def download(self):
 
         """
         Downloading dataset
 
-        !! downloads to ~/mne_data, after calling the process function once, this folder can be removed
+        !! downloads to ~/mne_data, this folder must exist
         """
         from braindecode.datasets.moabb import MOABBDataset
 
@@ -108,5 +113,21 @@ class Dataset:
             subject_ids=[subject_id],
         )
 
+        self.dataset.save(path=self.data_dir, overwrite=True)
+
+    # Set _ind to 0
     def start_epoch(self):
         self._ind = 0
+
+    """
+    Visualising methods
+    """
+
+    def plot_raw(self, trial):
+        self.dataset.datasets[trial].raw.plot(show_scrollbars=False).savefig(
+            "plots/raw.pdf"
+        )
+
+    def plot_raw_interactive(self, trial):
+        plot = self.dataset.datasets[trial].raw.plot(block=True)
+        plot.show()
