@@ -1,6 +1,8 @@
 from torch.utils.data import DataLoader
 from braindecode.datautil.serialization import load_concat_dataset
 import numpy as np
+import matplotlib.pyplot as plt
+import mne
 import os
 from braindecode.datautil.preprocess import (
     preprocess,
@@ -18,6 +20,8 @@ class Dataset:
         data_dir,
         model_type,
         window_size=None,
+        process=True,
+        window=True,
     ):
 
         self.device = device
@@ -47,23 +51,23 @@ class Dataset:
         except:
             self.download()
 
-        # Cut MEG data
+        # Keep only EEG data and downsample
         preprocess(
             self.dataset,
             [
-                Preprocessor("pick_types", eeg=True, meg=False, stim=False),
+                Preprocessor("pick_types", eeg=True, meg=False),
                 Preprocessor("resample", sfreq=100),
             ],
         )
 
         # Preprocess
-        self.process()
+        if process:
+            self.process()
 
         # Cut windows
-        self.cut_windows()
-
-        # Cut into train and validation split
-        self.split()
+        if window:
+            self.cut_windows()
+            self.split()
 
     # Split into train and validation set
     def split(self):
@@ -136,14 +140,41 @@ class Dataset:
     Visualising methods
     """
 
-    def plot_raw(self, trial):
+    def plot_raw(self, trial, name):
         self.dataset.datasets[trial].raw.plot(show_scrollbars=False).savefig(
-            "plots/raw.pdf"
+            "plots/" + name + ".pdf", bbox_inches="tight"
         )
 
     def plot_raw_interactive(self, trial):
         self.dataset.datasets[trial].raw.plot(block=True)
 
+    def plot_windows(self, trial, name):
+        events = mne.pick_events(
+            self.windows.datasets[trial].windows.events, include=[1, 2, 3]
+        )
+        self.windows.datasets[trial].windows["tongue"].plot(
+            events=events,
+            show_scrollbars=False,
+            event_id={"left_hand": 1, "right_hand": 2, "tongue": 3},
+            event_color=dict(tongue="r", left_hand="b", right_hand="k"),
+        ).savefig("plots/" + name + ".pdf", bbox_inches="tight")
+
     def plot_windows_interactive(self, trial):
-        print(len(self.windows.datasets[trial].windows))
-        self.windows.datasets[trial].windows.plot(block=True)
+        events = mne.pick_events(
+            self.windows.datasets[trial].windows.events, include=[1, 2, 3]
+        )
+        self.windows.datasets[trial].windows.tmin = -0.2
+        self.windows.datasets[trial].windows.tmax = 0.5
+        print(self.windows.datasets[trial].windows)
+        self.windows.datasets[trial].windows["tongue"].plot(
+            events=events,
+            block=True,
+            show_scrollbars=True,
+            # event_id={"left_hand": 1, "right_hand": 2, "tongue": 3},
+            event_color="blue",  # dict(tongue="r", left_hand="b", right_hand="k"),
+        )
+
+    def plot_psd(self, trial, name):
+        self.dataset.datasets[trial].raw.plot_psd(picks="eeg").savefig(
+            "plots/" + name + ".pdf", bbox_inches="tight"
+        )

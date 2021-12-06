@@ -150,6 +150,7 @@ def experiment(exp_name, exp_args, **kwargs):
         else:
             raise NotImplementedError("model type not implemented")
 
+        # Send model to device
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model)
         model.to(device)

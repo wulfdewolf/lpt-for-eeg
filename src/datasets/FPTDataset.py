@@ -1,5 +1,3 @@
-import os
-from braindecode.datautil.windowers import create_fixed_length_windows
 import torch
 
 """
@@ -27,9 +25,6 @@ class FPTDataset(Dataset):
         init_block_size = 1000
 
         preprocessors = [
-            Preprocessor(
-                "pick_types", eeg=True, meg=False, stim=False
-            ),  # Keep EEG sensors
             Preprocessor(lambda x: x * 1e6),  # Convert from V to uV
             Preprocessor(
                 "filter", l_freq=low_cut_hz, h_freq=high_cut_hz
@@ -66,6 +61,9 @@ class FPTDataset(Dataset):
             window_stride_samples=self.window_size,
             preload=True,
         )
+
+        # Delete the raw dataset
+        del self.dataset
 
     # Getting a single batch
     def get_batch(self, batch_size=None, train=True):
