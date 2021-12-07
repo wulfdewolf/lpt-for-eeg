@@ -12,8 +12,8 @@ from braindecode.models import ShallowFBCSPNet
 
 from src.models.fpt import FPT
 from src.trainer import Trainer
-from src.datasets.CNNDataset import CNNDataset
-from src.datasets.FPTDataset import FPTDataset
+from src.datasets.PhysioNetDataset import PhysioNetDataset
+from src.datasets.CompetitionDataset import CompetitionDataset
 
 from ray import tune
 from ray.tune import CLIReporter
@@ -91,19 +91,23 @@ def experiment(exp_name, exp_args, **kwargs):
             device = "cuda:0"
 
         # Dataset
-
-        # Model and dataset
-        if model_type == "CNN":
-
-            # Dataset
-            dataset = CNNDataset(
+        if task == "BCI_Competition_IV_2a":
+            dataset = CompetitionDataset(
                 task=task,
                 batch_size=batch_size,
                 seed=seed,
                 window_size=window_size,
                 device=device,
                 data_dir=data_dir,
+                model_type=model_type,
             )
+        else:
+            raise NotImplementedError("dataset not implemented")
+
+        # Model and dataset
+        if model_type == "CNN":
+
+            # Dimensions
             input_dim, output_dim = window_size, dataset.classes
 
             # Model
@@ -116,15 +120,7 @@ def experiment(exp_name, exp_args, **kwargs):
 
         elif model_type == "FPT":
 
-            # Dataset
-            dataset = FPTDataset(
-                task=task,
-                batch_size=batch_size,
-                seed=seed,
-                window_size=window_size,
-                device=device,
-                data_dir=data_dir,
-            )
+            # Dimensions
             input_dim, output_dim = dataset.n_channels, dataset.classes
 
             # Model

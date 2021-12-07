@@ -19,6 +19,7 @@ class Dataset:
         seed,
         data_dir,
         model_type,
+        classes,
         window_size=None,
         process=True,
         window=True,
@@ -31,25 +32,11 @@ class Dataset:
         self.seed = seed
         self.data_dir = data_dir
         self.task = task
+        self.classes = classes
+        self.model_type = model_type
+        self.data_dir = os.path.join(data_dir, self.task)
 
-        # Map task to MOABB dataset name
-        if task == "BCI_Competition_IV_2a":
-            self.dataset_name = "BNCI2014001"
-            self.classes = 4
-        else:
-            raise NotImplementedError(
-                "The dataset (identifier) for this task has not been implemented!"
-            )
-        self.data_dir = os.path.join(data_dir, self.dataset_name, model_type)
-
-        # Load data if it exists, otherwise download it
-        try:
-            self.dataset = load_concat_dataset(
-                path=self.data_dir,
-                preload=True,
-            )
-        except:
-            self.download()
+        # !! Subclasses should implement __init__ to download and assign self.dataset
 
         # Keep only EEG data and downsample
         preprocess(
@@ -114,24 +101,6 @@ class Dataset:
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
 
-    # Download the dataset and store it
-    def download(self):
-
-        """
-        Downloading dataset
-
-        !! downloads to ~/mne_data, this folder must exist
-        """
-        from braindecode.datasets.moabb import MOABBDataset
-
-        subject_id = 3
-        self.dataset = MOABBDataset(
-            dataset_name=self.dataset_name,
-            subject_ids=[subject_id],
-        )
-
-        self.dataset.save(path=self.data_dir, overwrite=True)
-
     # Set _ind to 0
     def start_epoch(self):
         self._ind = 0
@@ -163,9 +132,6 @@ class Dataset:
         events = mne.pick_events(
             self.windows.datasets[trial].windows.events, include=[1, 2, 3]
         )
-        self.windows.datasets[trial].windows.tmin = -0.2
-        self.windows.datasets[trial].windows.tmax = 0.5
-        print(self.windows.datasets[trial].windows)
         self.windows.datasets[trial].windows["tongue"].plot(
             events=events,
             block=True,

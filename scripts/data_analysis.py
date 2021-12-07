@@ -1,19 +1,16 @@
-from braindecode.datautil.preprocess import preprocess
-from torch.utils import data
-from src.datasets.CNNDataset import CNNDataset
-from src.datasets.FPTDataset import FPTDataset
-import mne
+from src.datasets.CompetitionDataset import CompetitionDataset
 
 """
 Plotting preprocessing
 """
-dataset = FPTDataset(
+dataset = CompetitionDataset(
     seed=20200220,
     task="BCI_Competition_IV_2a",
     batch_size=16,
     window_size=200,
     device="gpu",
     data_dir="./data",
+    model_type="FPT",
     process=False,
     window=True,
 )
