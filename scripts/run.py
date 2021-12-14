@@ -8,11 +8,11 @@ if __name__ == "__main__":
     experiment_params = dict(
         seed=20200220,
         # Data
-        task="BCI_Competition_IV_2a",
+        task="mnist",
         window_size=100,
         folds=5,
         # Model
-        model_type="CNN",
+        model_type="FPT",
         model_name="gpt2",
         # Pretraining
         pretrained=True,
@@ -25,20 +25,20 @@ if __name__ == "__main__":
         freeze_ff=True,
         freeze_out=False,
         # Hyper parameters
-        optimise=True,  # Whether or not a hyperparameters should be optimised
-        hyperparams=dict(
-            learning_rate=tune.loguniform(1e-4, 1e-1),
-            batch_size=tune.choice([2, 4, 8, 16]),
-            dropout=tune.loguniform(0.1, 1),
-            orth_gain=tune.loguniform(0.1, 3),
-        ),
-        # optimise=False,  # Whether or not a hyperparameters should be optimised
+        # optimise=True,  # Whether or not a hyperparameters should be optimised
         # hyperparams=dict(
-        #    learning_rate=0.01,
-        #    batch_size=4,
-        #    dropout=0.1,
-        #    orth_gain=0.1,
+        #    learning_rate=tune.loguniform(1e-4, 1e-1),
+        #    batch_size=tune.choice([2, 4, 8, 16, 32]),
+        #    dropout=tune.loguniform(0.1, 1),
+        #    orth_gain=tune.loguniform(0.1, 3),
         # ),
+        optimise=False,  # Whether or not a hyperparameters should be optimised
+        hyperparams=dict(
+            learning_rate=0.001,
+            batch_size=16,
+            dropout=0.1,
+            orth_gain=1.41,
+        ),
     )
 
     run_experiment(experiment_name, experiment_params)

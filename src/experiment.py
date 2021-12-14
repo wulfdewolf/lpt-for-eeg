@@ -35,13 +35,6 @@ def experiment(exp_name, exp_args, **kwargs):
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
-        # Data dirs
-        data_dir = os.path.join(os.environ["VSC_DATA"], "data")
-        model_dir = os.path.join(os.environ["VSC_DATA"], "models")
-    else:
-        data_dir = os.path.abspath("./data")
-        model_dir = os.path.abspath("./models")
-
     # Random id for experiment
     experiment_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
@@ -96,7 +89,17 @@ def experiment(exp_name, exp_args, **kwargs):
                 seed=seed,
                 window_size=window_size,
                 device=device,
-                data_dir=data_dir,
+                model_type=model_type,
+            )
+        elif task == "mnist":
+            from src.datasets.mnist import MNISTDataset
+
+            dataset = MNISTDataset(
+                task=task,
+                batch_size=batch_size,
+                seed=seed,
+                window_size=window_size,
+                device=device,
                 model_type=model_type,
             )
         else:

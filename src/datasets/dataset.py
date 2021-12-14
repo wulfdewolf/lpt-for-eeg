@@ -1,7 +1,10 @@
 from torch.utils.data import DataLoader
 import numpy as np
 import mne
-import os
+from braindecode.datautil.preprocess import (
+    preprocess,
+    Preprocessor,
+)
 
 
 class Dataset:
@@ -11,41 +14,35 @@ class Dataset:
         task,
         batch_size,
         seed,
-        data_dir,
         model_type,
         classes,
         n_channels,
         window_size=None,
         process=True,
         window=True,
+        downsample=True,
     ):
 
         self.device = device
         self.batch_size = batch_size
         self.window_size = window_size
         self.seed = seed
-        self.data_dir = data_dir
         self.task = task
         self.classes = classes
         self.n_channels = n_channels
         self.model_type = model_type
-        self.data_dir = os.path.join(data_dir, self.task)
 
         # !! Subclasses should implement __init__ to download and assign self.dataset
 
-        # Keep only EEG data and downsample
-        from braindecode.datautil.preprocess import (
-            preprocess,
-            Preprocessor,
-        )
-
-        preprocess(
-            self.dataset,
-            [
-                Preprocessor("pick_types", eeg=True, meg=False),
-                Preprocessor("resample", sfreq=100),
-            ],
-        )
+        # Downsample
+        if downsample:
+            preprocess(
+                self.dataset,
+                [
+                    Preprocessor("pick_types", eeg=True, meg=False),
+                    Preprocessor("resample", sfreq=100),
+                ],
+            )
 
         # Preprocess
         if process:
