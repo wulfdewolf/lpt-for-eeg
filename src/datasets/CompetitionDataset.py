@@ -1,8 +1,4 @@
 import torch
-
-"""
-Create Dataset object
-"""
 from src.datasets.dataset import Dataset
 
 
@@ -13,7 +9,7 @@ class CompetitionDataset(Dataset):
         # Load data
         # !! downloads to ~/mne_data, this folder must exist
         self.dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=[3])
-        super().__init__(classes=4, *args, **kwargs)
+        super().__init__(n_channels=22, classes=4, *args, **kwargs)
 
     # Preprocessing
     def process(self):
@@ -47,11 +43,6 @@ class CompetitionDataset(Dataset):
     # Cutting compute windows
     def cut_windows(self):
         from braindecode.datautil.windowers import create_windows_from_events
-        from sklearn.preprocessing import scale as standard_scale
-        from braindecode.datautil.preprocess import (
-            preprocess,
-            Preprocessor,
-        )
 
         trial_start_offset_seconds = -0.5
 
@@ -71,7 +62,6 @@ class CompetitionDataset(Dataset):
             window_stride_samples=self.window_size,
             preload=True,
         )
-        # preprocess(self.windows, [Preprocessor(standard_scale, channel_wise=True)])
 
         # Delete the raw dataset
         del self.dataset
@@ -95,7 +85,5 @@ class CompetitionDataset(Dataset):
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
-
-        self._ind += 1
 
         return x, y

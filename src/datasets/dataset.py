@@ -1,13 +1,7 @@
 from torch.utils.data import DataLoader
-from braindecode.datautil.serialization import load_concat_dataset
 import numpy as np
-import matplotlib.pyplot as plt
 import mne
 import os
-from braindecode.datautil.preprocess import (
-    preprocess,
-    Preprocessor,
-)
 
 
 class Dataset:
@@ -20,25 +14,31 @@ class Dataset:
         data_dir,
         model_type,
         classes,
+        n_channels,
         window_size=None,
         process=True,
         window=True,
     ):
 
         self.device = device
-        self._ind = 0
         self.batch_size = batch_size
         self.window_size = window_size
         self.seed = seed
         self.data_dir = data_dir
         self.task = task
         self.classes = classes
+        self.n_channels = n_channels
         self.model_type = model_type
         self.data_dir = os.path.join(data_dir, self.task)
 
         # !! Subclasses should implement __init__ to download and assign self.dataset
 
         # Keep only EEG data and downsample
+        from braindecode.datautil.preprocess import (
+            preprocess,
+            Preprocessor,
+        )
+
         preprocess(
             self.dataset,
             [
@@ -54,11 +54,9 @@ class Dataset:
         # Cut windows
         if window:
             self.cut_windows()
-            self.split()
 
-    # Split into train and validation set
-    def split(self):
-        splitted = self.windows.split("session")
+    # Split into train and test set via fold ids
+    def set_loaders(self, train_ids, test_ids):
 
         """
         Set worker seeds for reproducibility
@@ -75,35 +73,31 @@ class Dataset:
         g.manual_seed(self.seed)
 
         """
-        Data loader
+        Fold random samplers 
+        """
+        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
+        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+
+        """
+        Data loaders
         """
         self.d_train = DataLoader(
-            splitted["session_T"],
+            self.windows,
             batch_size=self.batch_size,
-            drop_last=True,
-            shuffle=True,
+            sampler=train_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )
         self.d_test = DataLoader(
-            splitted["session_E"],
+            self.windows,
             batch_size=self.batch_size,
-            drop_last=True,
-            shuffle=True,
+            sampler=test_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )
 
-        # Store channels and classes
-        self.n_channels = splitted["session_T"][0][0].shape[0]
-        self.input_window_samples = splitted["session_T"][0][0].shape[1]
-
         self.train_enum = enumerate(self.d_train)
         self.test_enum = enumerate(self.d_test)
-
-    # Set _ind to 0
-    def start_epoch(self):
-        self._ind = 0
 
     """
     Visualising methods

@@ -6,7 +6,6 @@ from tqdm import tqdm
 class Trainer:
     def __init__(
         self,
-        model,
         model_type,
         dataset,
         loss_fn,
@@ -18,19 +17,20 @@ class Trainer:
         eval_batch_size=8,
         grad_accumulate=1,
     ):
-        self.model = model
         self.model_type = model_type
         self.dataset = dataset
         self.loss_fn = loss_fn
         self.acc_fn = accuracy_fn
         self.steps_per_epoch = steps_per_epoch
         self.test_steps_per_epoch = test_steps_per_epoch
+        self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.eval_batch_size = eval_batch_size
         self.grad_accumulate = grad_accumulate
 
-        self.optim = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
+    def set_model(self, model):
+        self.model = model
+        self.optim = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         self.diagnostics = {"Gradient Steps": 0}
 
     def get_loss(self, x, y, return_acc=False):
@@ -54,8 +54,6 @@ class Trainer:
         return loss
 
     def train_epoch(self, epoch, test_steps=None):
-        self.dataset.start_epoch()
-
         train_losses, tr_accuracy = [], 0.0
         self.model.train()
         start_train_time = time.time()
