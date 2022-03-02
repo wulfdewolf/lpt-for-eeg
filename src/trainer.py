@@ -41,7 +41,7 @@ class Trainer:
                 :, None, :
             ]  # braindecode uses a different format, extra nested level is needed around the predicted class probs
         elif self.model_type == "BENDR":
-            out = out[1]
+            out = out[1]  # select features
             out = out[
                 :, None, :
             ]  # DN3 uses a different format, extra nested level is needed around the predicted class probs

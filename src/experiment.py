@@ -91,7 +91,6 @@ def experiment(exp_name, exp_args, **kwargs):
                 seed=seed,
                 window_size=window_size,
                 device=device,
-                model_type=model_type,
             )
         elif task == "mnist":
             from src.datasets.mnist import MNISTDataset
@@ -102,7 +101,6 @@ def experiment(exp_name, exp_args, **kwargs):
                 seed=seed,
                 window_size=window_size,
                 device=device,
-                model_type=model_type,
             )
         else:
             raise NotImplementedError("dataset not implemented")

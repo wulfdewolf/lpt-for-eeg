@@ -3,3 +3,5 @@ moabb
 braindecode
 ray
 hiredis
+parse
+pyyaml-include

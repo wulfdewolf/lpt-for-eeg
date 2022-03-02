@@ -55,9 +55,7 @@ class FPT(nn.Module):
 
         if use_encoding_for_in:
             self.in_net = ConvEncoderBENDR(
-                channels,
-                encoder_h=encoder_h,
-                dropout=dropout,
+                channels, encoder_h=encoder_h, dropout=dropout
             )
         else:
             in_layers = []
@@ -128,8 +126,8 @@ class FPT(nn.Module):
         x = transformer_outputs.last_hidden_state
 
         # take final hidden state of tokens corresponding to last patch
-        # if self.return_last_only:
-        #    x = x[:, -ratio:]
+        if self.return_last_only:
+            x = x[:, -1:]
 
         # Pass through final linear NN
         x = self.out_net(x)

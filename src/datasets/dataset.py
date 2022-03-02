@@ -14,11 +14,9 @@ class Dataset:
         task,
         batch_size,
         seed,
-        model_type,
         classes,
         n_channels,
         window_size=None,
-        process=True,
         window=True,
         downsample=True,
     ):
@@ -30,7 +28,6 @@ class Dataset:
         self.task = task
         self.classes = classes
         self.n_channels = n_channels
-        self.model_type = model_type
 
         # !! Subclasses should implement __init__ to download and assign self.dataset
 
@@ -40,13 +37,9 @@ class Dataset:
                 self.dataset,
                 [
                     Preprocessor("pick_types", eeg=True, meg=False),
-                    Preprocessor("resample", sfreq=100),
                 ],
             )
-
-        # Preprocess
-        if process:
-            self.process()
+        self.process()
 
         # Cut windows
         if window:

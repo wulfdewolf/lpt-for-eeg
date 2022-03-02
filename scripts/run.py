@@ -12,7 +12,7 @@ if __name__ == "__main__":
         window_size=6,
         folds=5,
         # Model
-        model_type="BENDR",
+        model_type="FPT",
         model_name="gpt2",
         # Pretraining
         pretrained=True,
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         optimise=False,  # Whether or not a hyperparameters should be optimised
         hyperparams=dict(
             learning_rate=0.001,
-            batch_size=30,
+            batch_size=60,
             dropout=0.1,
             orth_gain=1.41,
         ),
