@@ -12,7 +12,7 @@ if __name__ == "__main__":
         window_size=6,
         folds=5,
         # Model
-        model_type="FPT",
+        model_type="BENDR",
         model_name="gpt2",
         # Pretraining
         pretrained=True,
