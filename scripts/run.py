@@ -8,8 +8,8 @@ if __name__ == "__main__":
     experiment_params = dict(
         seed=20200220,
         # Data
-        task="mnist",
-        window_size=100,
+        task="competition",
+        window_size=6,
         folds=5,
         # Model
         model_type="FPT",
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         optimise=False,  # Whether or not a hyperparameters should be optimised
         hyperparams=dict(
             learning_rate=0.001,
-            batch_size=16,
+            batch_size=30,
             dropout=0.1,
             orth_gain=1.41,
         ),

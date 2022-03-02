@@ -13,3 +13,5 @@ moabb
 ray
 hiredis
 tensorboardX
+parse
+pyyaml-include

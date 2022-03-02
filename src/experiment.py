@@ -20,6 +20,8 @@ from ray.tune.schedulers import ASHAScheduler
 from functools import partial
 from sklearn.model_selection import KFold
 
+from src.BENDR.dn3_ext import LinearHeadBENDR
+
 
 def experiment(exp_name, exp_args, **kwargs):
 
@@ -82,7 +84,7 @@ def experiment(exp_name, exp_args, **kwargs):
         )
 
         # Dataset
-        if task == "BCI_Competition_IV_2a":
+        if task == "competition":
             dataset = CompetitionDataset(
                 task=task,
                 batch_size=batch_size,
@@ -110,6 +112,8 @@ def experiment(exp_name, exp_args, **kwargs):
         if model_type == "CNN":
             input_dim = window_size
         elif model_type == "FPT":
+            input_dim = dataset.n_channels
+        elif model_type == "BENDR":
             input_dim = dataset.n_channels
         else:
             raise NotImplementedError("model type not implemented")
@@ -165,13 +169,20 @@ def experiment(exp_name, exp_args, **kwargs):
                     input_window_samples=input_dim,
                     final_conv_length="auto",
                 )
+            elif model_type == "BENDR":
+                model = LinearHeadBENDR(output_dim, window_size, dataset.n_channels)
+                # model.load_pretrained_modules(
+                #    "src/models/bendr/encoder.pt",
+                #    "src/models/bendr/contextualizer.pt",
+                # )
             elif model_type == "FPT":
                 model = FPT(
                     input_dim=input_dim,
                     output_dim=output_dim,
+                    channels=dataset.n_channels,
                     model_name=kwargs.get("model_name", "gpt2"),
                     pretrained=kwargs.get("pretrained", True),
-                    use_embeddings_for_in=False,
+                    use_encoding_for_in=True,
                     in_layer_sizes=kwargs.get("in_layer_sizes", None),
                     out_layer_sizes=kwargs.get("out_layer_sizes", None),
                     freeze_trans=kwargs.get("freeze_trans", True),
@@ -307,7 +318,7 @@ def run_experiment(
         "--num_iters",
         "-it",
         type=int,
-        default=4,
+        default=16,
         help="Number of iterations for trainer",
     )
     parser.add_argument(
@@ -356,7 +367,7 @@ def run_experiment(
         "--gpu_batch_size",
         "-gbs",
         type=int,
-        default=16,
+        default=15,
         help="Max batch size to put on GPU (used for gradient accumulation)",
     )
 

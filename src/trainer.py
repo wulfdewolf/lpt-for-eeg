@@ -36,7 +36,7 @@ class Trainer:
     def get_loss(self, x, y, return_acc=False):
         out = self.model(x)
 
-        if self.model_type == "CNN":
+        if self.model_type == "CNN" or self.model_type == "BENDR":
             out = out[
                 :, None, :
             ]  # braindecode uses a different format, extra nested level is needed around the predicted class probs

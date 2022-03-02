@@ -79,9 +79,9 @@ class CompetitionDataset(Dataset):
                 self.test_enum = enumerate(self.d_test)
             _, (x, y, _) = next(self.train_enum if train else self.test_enum)
 
-        # Rearrange
-        if self.model_type == "FPT":
-            x = torch.transpose(x, 1, 2)
+        ## Rearrange
+        # if self.model_type == "FPT":
+        #    x = torch.transpose(x, 1, 2)
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
