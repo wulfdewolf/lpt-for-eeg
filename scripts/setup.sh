@@ -12,6 +12,9 @@ git clone git@github.com:SPOClab-ca/dn3.git
 cd dn3
 python3 setup.py sdist
 pip3 install .
+
+# Cleanup
+cd ..
 rm -rf dn3
 
 # Add to pythonpath

@@ -8,5 +8,8 @@ git clone git@github.com:SPOClab-ca/dn3.git
 cd dn3
 python3 setup.py sdist
 pip install --user .
+
+# Cleanup
+cd ..
 rm -rf dn3
 
