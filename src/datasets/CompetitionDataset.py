@@ -1,5 +1,6 @@
 import torch
 from src.datasets.dataset import Dataset
+import GPUtil
 
 
 class CompetitionDataset(Dataset):

@@ -9,7 +9,7 @@ if __name__ == "__main__":
         seed=20200220,
         # Data
         task="competition",
-        window_size=6,
+        window_size=60,
         folds=5,
         # Model
         model_type="FPT",
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         optimise=False,  # Whether or not a hyperparameters should be optimised
         hyperparams=dict(
             learning_rate=0.001,
-            batch_size=60,
+            batch_size=10,
             dropout=0.1,
             orth_gain=1.41,
         ),

@@ -54,9 +54,7 @@ class FPT(nn.Module):
             raise NotImplementedError("model_name not implemented")
 
         if use_encoding_for_in:
-            self.in_net = ConvEncoderBENDR(
-                channels, encoder_h=encoder_h, dropout=dropout
-            )
+            self.in_net = ConvEncoderBENDR(channels, encoder_h=768, dropout=dropout)
         else:
             in_layers = []
             last_output_size = input_dim
@@ -82,7 +80,7 @@ class FPT(nn.Module):
             self.in_net = nn.Sequential(*in_layers)
 
         out_layers = []
-        last_output_size = encoder_h if use_encoding_for_in else embedding_size
+        last_output_size = embedding_size
         for size in self.out_layer_sizes:
             out_layers.append(nn.Linear(last_output_size, size))
             out_layers.append(nn.ReLU())

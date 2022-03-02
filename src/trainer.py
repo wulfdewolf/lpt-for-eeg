@@ -1,6 +1,7 @@
 import torch
 import time
 from tqdm import tqdm
+import GPUtil
 
 
 class Trainer:
@@ -10,7 +11,7 @@ class Trainer:
         dataset,
         loss_fn,
         accuracy_fn=None,
-        steps_per_epoch=100,
+        steps_per_epoch=1,
         test_steps_per_epoch=20,
         learning_rate=1e-3,
         batch_size=2,
@@ -41,7 +42,7 @@ class Trainer:
                 :, None, :
             ]  # braindecode uses a different format, extra nested level is needed around the predicted class probs
         elif self.model_type == "BENDR":
-            out = out[1]  # select features
+            out = out[0]  # select features
             out = out[
                 :, None, :
             ]  # DN3 uses a different format, extra nested level is needed around the predicted class probs
