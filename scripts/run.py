@@ -9,7 +9,7 @@ if __name__ == "__main__":
         seed=20200220,
         # Data
         task="competition",
-        window_size=60,
+        window_size=6,  # in seconds
         folds=5,
         # Model
         model_type="FPT",

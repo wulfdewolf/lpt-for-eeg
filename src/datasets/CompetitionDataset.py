@@ -50,8 +50,8 @@ class CompetitionDataset(Dataset):
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
-            window_size_samples=self.window_size,
-            window_stride_samples=self.window_size,
+            window_size_samples=sfreq * self.window_size,
+            window_stride_samples=sfreq * self.window_size,
             preload=True,
         )
 

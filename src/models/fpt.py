@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from src.BENDR.dn3_ext import ConvEncoderBENDR
+from dn3.trainable.layers import Permute
 
 
 class FPT(nn.Module):
@@ -54,7 +55,11 @@ class FPT(nn.Module):
             raise NotImplementedError("model_name not implemented")
 
         if use_encoding_for_in:
-            self.in_net = ConvEncoderBENDR(channels, encoder_h=768, dropout=dropout)
+            self.in_net = nn.Sequential(
+                ConvEncoderBENDR(channels, encoder_h=encoder_h, dropout=dropout),
+                Permute([0, 2, 1]),
+                nn.Linear(encoder_h, embedding_size),
+            )
         else:
             in_layers = []
             last_output_size = input_dim
