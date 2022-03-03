@@ -41,14 +41,10 @@ class CompetitionDataset(Dataset):
         sfreq = self.dataset.datasets[0].raw.info["sfreq"]
         assert all([ds.raw.info["sfreq"] == sfreq for ds in self.dataset.datasets])
 
-        # Calculate the trial start offset in samples.
-        trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
-
         # Create windows using braindecode function for this.
         self.windows = create_fixed_length_windows(
             self.dataset,
-            trial_start_offset_samples=trial_start_offset_samples,
-            trial_stop_offset_samples=0,
+            start_offset_samples=int(sfreq) * trial_start_offset_seconds,
             window_size_samples=int(sfreq) * self.window_size,
             window_stride_samples=int(sfreq) * self.window_size,
         )
