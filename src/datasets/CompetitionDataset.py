@@ -39,7 +39,6 @@ class CompetitionDataset(Dataset):
 
         # Extract sampling frequency, check that they are same in all datasets
         sfreq = self.dataset.datasets[0].raw.info["sfreq"]
-        print(sfreq)
         assert all([ds.raw.info["sfreq"] == sfreq for ds in self.dataset.datasets])
 
         # Calculate the trial start offset in samples.
@@ -50,8 +49,8 @@ class CompetitionDataset(Dataset):
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
-            window_size_samples=sfreq * self.window_size,
-            window_stride_samples=sfreq * self.window_size,
+            window_size_samples=int(sfreq) * self.window_size,
+            window_stride_samples=int(sfreq) * self.window_size,
             preload=True,
         )
 
