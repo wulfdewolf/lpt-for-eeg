@@ -61,7 +61,7 @@ class FPT(nn.Module):
             self.in_net = nn.Sequential(
                 ConvEncoderBENDR(channels, encoder_h=encoder_h, dropout=dropout),
                 Permute([0, 2, 1]),
-                nn.Linear(encoder_h, embedding_size),
+                # nn.Linear(encoder_h, embedding_size),
             )
         else:
             in_layers = []
@@ -124,6 +124,7 @@ class FPT(nn.Module):
         # Pass through in NN (linear or BENDR)
         print(x.shape)
         x = self.in_net(x)
+        print(x.shape)
 
         # Pass through transformer
         transformer_outputs = self.sequence_model(
