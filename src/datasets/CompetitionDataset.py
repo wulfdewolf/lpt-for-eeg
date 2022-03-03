@@ -11,26 +11,6 @@ class CompetitionDataset(Dataset):
         self.dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=[3])
         super().__init__(n_channels=22, classes=4, *args, **kwargs)
 
-    # Preprocessing
-    def process(self):
-        from braindecode.datautil.preprocess import (
-            preprocess,
-            Preprocessor,
-        )
-
-        low_cut_hz = 4.0  # low cut frequency for filtering
-        high_cut_hz = 38.0  # high cut frequency for filtering
-
-        preprocessors = [
-            # Preprocessor(lambda x: x * 1e6),  # Convert from V to uV
-            Preprocessor(
-                "filter", l_freq=low_cut_hz, h_freq=high_cut_hz
-            ),  # Bandpass filter
-        ]
-
-        # Transform the data
-        # preprocess(self.dataset, preprocessors)
-
     # Cutting compute windows
     def cut_windows(self):
         from braindecode.datautil.windowers import create_fixed_length_windows

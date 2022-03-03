@@ -89,6 +89,7 @@ def experiment(exp_name, exp_args, **kwargs):
                 task=task,
                 batch_size=batch_size,
                 seed=seed,
+                window=True,
                 window_size=window_size,
                 device=device,
             )

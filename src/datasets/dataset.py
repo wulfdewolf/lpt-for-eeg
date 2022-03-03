@@ -10,15 +10,14 @@ from braindecode.datautil.preprocess import (
 class Dataset:
     def __init__(
         self,
-        device,
         task,
-        batch_size,
         seed,
         classes,
         n_channels,
+        device="cpu",
+        batch_size=1,
         window_size=None,
-        window=True,
-        downsample=True,
+        window=False,
     ):
 
         self.device = device
@@ -31,15 +30,13 @@ class Dataset:
 
         # !! Subclasses should implement __init__ to download and assign self.dataset
 
-        # Downsample
-        if downsample:
-            preprocess(
-                self.dataset,
-                [
-                    Preprocessor("pick_types", eeg=True, meg=False),
-                ],
-            )
-        self.process()
+        # Select EEG
+        preprocess(
+            self.dataset,
+            [
+                Preprocessor("pick_types", eeg=True, meg=False),
+            ],
+        )
 
         # Cut windows
         if window:

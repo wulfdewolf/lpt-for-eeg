@@ -55,17 +55,24 @@ class FPT(nn.Module):
         else:
             raise NotImplementedError("model_name not implemented")
 
+        # INPUT NN
+        in_layers = []
         if use_encoding_for_in:
-            print(encoder_h)
-            print(embedding_size)
-            self.in_net = nn.Sequential(
-                ConvEncoderBENDR(channels, encoder_h=encoder_h, dropout=dropout),
-                Permute([0, 2, 1]),
-                # nn.Linear(encoder_h, embedding_size),
+
+            # BENDR layer
+            in_layers.append(
+                ConvEncoderBENDR(channels, encoder_h=encoder_h, dropout=dropout)
             )
+
+            # Permutation layer
+            in_layers.append(Permute([0, 2, 1]))
+
+            # Output is
+            last_output_size = encoder_h
+
         else:
-            in_layers = []
-            last_output_size = input_dim
+
+            # LINEAR NN layers
             for size in self.in_layer_sizes:
                 layer = nn.Linear(last_output_size, size)
                 if orth_gain is not None:
@@ -77,16 +84,20 @@ class FPT(nn.Module):
                 in_layers.append(nn.Dropout(dropout))
                 last_output_size = size
 
-            final_linear = nn.Linear(last_output_size, embedding_size)
-            if orth_gain is not None:
-                torch.nn.init.orthogonal_(final_linear.weight, gain=orth_gain)
-            final_linear.bias.data.zero_()
+            # Output is
+            last_output_size = input_dim
 
-            in_layers.append(final_linear)
-            in_layers.append(nn.Dropout(dropout))
+        final_linear = nn.Linear(last_output_size, embedding_size)
+        if orth_gain is not None:
+            torch.nn.init.orthogonal_(final_linear.weight, gain=orth_gain)
+        final_linear.bias.data.zero_()
 
-            self.in_net = nn.Sequential(*in_layers)
+        in_layers.append(final_linear)
+        in_layers.append(nn.Dropout(dropout))
 
+        self.in_net = nn.Sequential(*in_layers)
+
+        # OUTPUT NN
         out_layers = []
         last_output_size = embedding_size
         for size in self.out_layer_sizes:
