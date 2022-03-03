@@ -34,7 +34,6 @@ class Trainer:
         self.diagnostics = {"Gradient Steps": 0}
 
     def get_loss(self, x, y, return_acc=False):
-        print(y)
         out = self.model(x)
 
         if self.model_type == "CNN":

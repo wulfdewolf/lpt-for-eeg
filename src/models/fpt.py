@@ -133,9 +133,7 @@ class FPT(nn.Module):
     def forward(self, x):
 
         # Pass through input NN
-        print(x.shape)
         x = self.in_net(x)
-        print(x.shape)
 
         # Pass through transformer
         transformer_outputs = self.sequence_model(
