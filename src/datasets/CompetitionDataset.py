@@ -33,7 +33,7 @@ class CompetitionDataset(Dataset):
 
     # Cutting compute windows
     def cut_windows(self):
-        from braindecode.datautil.windowers import create_windows_from_events
+        from braindecode.datautil.windowers import create_fixed_length_windows
 
         trial_start_offset_seconds = -0.5
 
@@ -45,13 +45,12 @@ class CompetitionDataset(Dataset):
         trial_start_offset_samples = int(trial_start_offset_seconds * sfreq)
 
         # Create windows using braindecode function for this.
-        self.windows = create_windows_from_events(
+        self.windows = create_fixed_length_windows(
             self.dataset,
             trial_start_offset_samples=trial_start_offset_samples,
             trial_stop_offset_samples=0,
             window_size_samples=int(sfreq) * self.window_size,
             window_stride_samples=int(sfreq) * self.window_size,
-            preload=True,
         )
 
         # Delete the raw dataset
