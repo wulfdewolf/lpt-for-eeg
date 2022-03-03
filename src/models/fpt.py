@@ -1,3 +1,4 @@
+from base64 import encode
 import torch
 import torch.nn as nn
 
@@ -55,6 +56,8 @@ class FPT(nn.Module):
             raise NotImplementedError("model_name not implemented")
 
         if use_encoding_for_in:
+            print(encoder_h)
+            print(embedding_size)
             self.in_net = nn.Sequential(
                 ConvEncoderBENDR(channels, encoder_h=encoder_h, dropout=dropout),
                 Permute([0, 2, 1]),
@@ -119,6 +122,7 @@ class FPT(nn.Module):
     def forward(self, x):
 
         # Pass through in NN (linear or BENDR)
+        print(x.shape)
         x = self.in_net(x)
 
         # Pass through transformer
