@@ -1,7 +1,6 @@
 import torch
 import time
 from tqdm import tqdm
-import GPUtil
 
 
 class Trainer:

@@ -7,7 +7,7 @@ python3 -m venv env
 source env/bin/activate
 
 # Install reqs
-pip3 install -r requirements.txt
+pip3 install -r scripts/local/requirements.txt
 git clone git@github.com:SPOClab-ca/dn3.git
 cd dn3
 python3 setup.py sdist
