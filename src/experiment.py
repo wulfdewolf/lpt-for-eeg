@@ -107,7 +107,7 @@ def experiment(exp_name, exp_args, **kwargs):
             raise NotImplementedError("dataset not implemented")
 
         # Dimensions
-        output_dim = dataset.classes
+        output_dim = dataset.n_classes
         if model_type == "CNN":
             input_dim = window_size
         elif model_type == "FPT":
@@ -152,13 +152,10 @@ def experiment(exp_name, exp_args, **kwargs):
             else:
                 group_name += "-crossval"
 
-        # Define cross-validation folds
-        kfold = KFold(n_splits=folds, shuffle=True)
-
-        # For each fold
+        # CROSS-VALIDATION per subject
         avg_test_loss = 0
         avg_accuracy = 0
-        for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset.windows)):
+        for validation_subject in range(dataset.n_subjects):
 
             # Model
             if model_type == "CNN":
@@ -206,12 +203,12 @@ def experiment(exp_name, exp_args, **kwargs):
             trainer.set_model(model)
 
             # Set data loaders specifically for this fold
-            dataset.set_loaders(train_ids, test_ids)
+            dataset.set_loaders(validation_subject)
 
             # Init a wandb run for this fold
             if log_to_wandb:
                 run = wandb.init(
-                    name="fold" + str(fold + 1),
+                    name="fold" + str(validation_subject),
                     group=group_name,
                     project=exp_args["wandb_project"],
                     config=config,

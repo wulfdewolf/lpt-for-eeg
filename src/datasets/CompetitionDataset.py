@@ -8,8 +8,8 @@ class CompetitionDataset(Dataset):
 
         # Load data
         # !! downloads to ~/mne_data, this folder must exist
-        self.dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=[3])
-        super().__init__(n_channels=22, classes=4, *args, **kwargs)
+        self.dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=None)
+        super().__init__(n_channels=22, n_classes=4, n_subjects=9, *args, **kwargs)
 
     # Cutting compute windows
     def cut_windows(self):
@@ -22,7 +22,7 @@ class CompetitionDataset(Dataset):
         sfreq = self.dataset.datasets[0].raw.info["sfreq"]
         assert all([ds.raw.info["sfreq"] == sfreq for ds in self.dataset.datasets])
 
-        # Create windows using braindecode function for this.
+        # Create windows
         self.windows = create_windows_from_events(
             self.dataset,
             trial_start_offset_samples=int(trial_start_offset_seconds*sfreq),
@@ -30,7 +30,11 @@ class CompetitionDataset(Dataset):
             drop_last_window=True,
         )
 
-        # Delete the raw dataset
+        # Save data per subject
+        self.data_per_subject = list(self.windows.split(by="subject").values())
+
+        # Cleanup
+        del self.windows
         del self.dataset
 
     # Getting a single batch

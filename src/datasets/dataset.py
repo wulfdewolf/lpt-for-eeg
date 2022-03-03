@@ -1,10 +1,10 @@
 from torch.utils.data import DataLoader
 import numpy as np
-import mne
 from braindecode.datautil.preprocess import (
     preprocess,
     Preprocessor,
 )
+from braindecode.datasets import BaseConcatDataset
 
 
 class Dataset:
@@ -12,8 +12,9 @@ class Dataset:
         self,
         task,
         seed,
-        classes,
+        n_classes,
         n_channels,
+        n_subjects,
         device="cpu",
         batch_size=1,
         window_size=None,
@@ -25,8 +26,9 @@ class Dataset:
         self.window_size = window_size
         self.seed = seed
         self.task = task
-        self.classes = classes
+        self.n_classes = n_classes
         self.n_channels = n_channels
+        self.n_subjects = n_subjects
 
         # !! Subclasses should implement __init__ to download and assign self.dataset
 
@@ -43,7 +45,7 @@ class Dataset:
             self.cut_windows()
 
     # Split into train and test set via fold ids
-    def set_loaders(self, train_ids, test_ids):
+    def set_loaders(self, validation_subject):
 
         """
         Set worker seeds for reproducibility
@@ -62,23 +64,23 @@ class Dataset:
         """
         Fold random samplers 
         """
-        train_subsampler = torch.utils.data.SubsetRandomSampler(train_ids)
-        test_subsampler = torch.utils.data.SubsetRandomSampler(test_ids)
+        #train_subsampler = torch.utils.data.RandomSampler()
+        #test_subsampler = torch.utils.data.RandomSampler()
 
         """
         Data loaders
         """
         self.d_train = DataLoader(
-            self.windows,
+            BaseConcatDataset(self.data_per_subject[:validation_subject] + self.data_per_subject[validation_subject+1:]),
             batch_size=self.batch_size,
-            sampler=train_subsampler,
+            #sampler=train_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )
         self.d_test = DataLoader(
-            self.windows,
+            self.data_per_subject[validation_subject],
             batch_size=self.batch_size,
-            sampler=test_subsampler,
+            #sampler=test_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )

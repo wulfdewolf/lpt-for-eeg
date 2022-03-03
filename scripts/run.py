@@ -34,8 +34,8 @@ if __name__ == "__main__":
         # ),
         optimise=False,  # Whether or not a hyperparameters should be optimised
         hyperparams=dict(
-            learning_rate=0.001,
-            batch_size=90,
+            learning_rate=0.00005,
+            batch_size=60,
             dropout=0.1,
             orth_gain=1.41,
         ),
