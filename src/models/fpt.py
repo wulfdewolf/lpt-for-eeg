@@ -38,11 +38,11 @@ class FPT(nn.Module):
         self.model_name = model_name
         self.return_last_only = return_last_only
         self.use_encoding_for_in = use_encoding_for_in
-
         self.in_layer_sizes = [] if in_layer_sizes is None else in_layer_sizes
         self.out_layer_sizes = [] if out_layer_sizes is None else out_layer_sizes
         self.dropout = dropout
 
+        # TRANSFORMER
         if model_name == "gpt2":
             from transformers import GPT2Model
 
@@ -132,7 +132,7 @@ class FPT(nn.Module):
 
     def forward(self, x):
 
-        # Pass through in NN (linear or BENDR)
+        # Pass through input NN
         print(x.shape)
         x = self.in_net(x)
         print(x.shape)
@@ -148,7 +148,7 @@ class FPT(nn.Module):
         if self.return_last_only:
             x = x[:, -1:]
 
-        # Pass through final linear NN
+        # Pass through output NN
         x = self.out_net(x)
 
         return x
