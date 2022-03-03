@@ -45,6 +45,8 @@ class CompetitionDataset(Dataset):
         self.windows = create_fixed_length_windows(
             self.dataset,
             start_offset_samples=int(sfreq) * trial_start_offset_seconds,
+            stop_offset_samples=None,
+            drop_last_window=True,
             window_size_samples=int(sfreq) * self.window_size,
             window_stride_samples=int(sfreq) * self.window_size,
         )
