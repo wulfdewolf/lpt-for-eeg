@@ -35,10 +35,11 @@ class Dataset:
         # Select EEG
         preprocess(
             self.dataset,
-            [
-                Preprocessor("pick_types", eeg=True, meg=False),
-            ],
+            [],
         )
+
+        # Preprocess
+        self.preprocess()
 
         # Cut windows
         if window:
@@ -64,23 +65,26 @@ class Dataset:
         """
         Fold random samplers 
         """
-        #train_subsampler = torch.utils.data.RandomSampler()
-        #test_subsampler = torch.utils.data.RandomSampler()
+        # train_subsampler = torch.utils.data.RandomSampler()
+        # test_subsampler = torch.utils.data.RandomSampler()
 
         """
         Data loaders
         """
         self.d_train = DataLoader(
-            BaseConcatDataset(self.data_per_subject[:validation_subject] + self.data_per_subject[validation_subject+1:]),
+            BaseConcatDataset(
+                self.data_per_subject[:validation_subject]
+                + self.data_per_subject[validation_subject + 1 :]
+            ),
             batch_size=self.batch_size,
-            #sampler=train_subsampler,
+            # sampler=train_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )
         self.d_test = DataLoader(
             self.data_per_subject[validation_subject],
             batch_size=self.batch_size,
-            #sampler=test_subsampler,
+            # sampler=test_subsampler,
             worker_init_fn=seed_worker,
             generator=g,
         )

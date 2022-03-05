@@ -1,4 +1,5 @@
 import torch
+import mne
 from src.datasets.dataset import Dataset
 
 
@@ -10,6 +11,29 @@ class CompetitionDataset(Dataset):
         # !! downloads to ~/mne_data, this folder must exist
         self.dataset = MOABBDataset(dataset_name="BNCI2014001", subject_ids=None)
         super().__init__(n_channels=22, n_classes=4, n_subjects=9, *args, **kwargs)
+
+    # Preprocessing
+    def preprocess(self):
+        from braindecode.datautil.preprocess import preprocess, Preprocessor
+        from numpy import multiply
+        from dn3.utils import min_max_normalize
+        from dn3.transforms.channels import map_named_channels_deep_1010
+
+        # Drop unneeded channels
+        # for raw in self.dataset.datasets:
+        #    raw.drop_channels([])
+        # print(self.dataset.datasets[0].raw.ch_names)
+
+        # Define preprocessors to apply
+        preprocessors = [
+            Preprocessor("pick_types", eeg=True),  # Select only EEG channels
+            Preprocessor(
+                min_max_normalize, apply_on_array=True
+            ),  # Scale betweeen -1 and 1
+        ]
+
+        # Preprocess
+        preprocess(self.dataset, preprocessors)
 
     # Cutting compute windows
     def cut_windows(self):
@@ -25,7 +49,7 @@ class CompetitionDataset(Dataset):
         # Create windows
         self.windows = create_windows_from_events(
             self.dataset,
-            trial_start_offset_samples=int(trial_start_offset_seconds*sfreq),
+            trial_start_offset_samples=int(trial_start_offset_seconds * sfreq),
             trial_stop_offset_samples=0,
             drop_last_window=True,
         )
