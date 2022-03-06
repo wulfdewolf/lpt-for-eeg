@@ -1,0 +1,16 @@
+mmidb:
+bci_iv_2a:
+  name: "BCI Competition IV 2a"
+  toplevel: /home/wolf/fpt-for-eeg/data
+  tmin: -2
+  tlen: 6
+  data_max: 100
+  data_min: -100
+  extensions:
+    - .fif
+  picks:
+    - eeg
+  train_params:
+    epochs: 15
+    batch_size: 60 # This dataset likes batches of ~60 (community is overfitting this)
+  lr: 0.00005
