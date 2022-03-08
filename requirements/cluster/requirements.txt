@@ -1,7 +1,4 @@
 transformers
-moabb
-braindecode
-ray
-hiredis
 parse
 pyyaml-include
+openpyxl

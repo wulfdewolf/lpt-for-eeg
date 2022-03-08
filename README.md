@@ -1,19 +1,21 @@
 # Pretrained transformers as EEG decoders
 
-This repository contains a framework that allows for running a number of EEG classification tasks, each time using two types of models.
-The first type of models consists of traditional EEG decoding models, while the second type of models are huge NLP models.
-Research by [Lu et al.](https://arxiv.org/abs/2103.05247) has shown that these huge NLP models, or _Pretrained Transformers (PT)_, that have been trained on natural language can be generalized to other modalities with minimal finetuning.
+This repository contains the source code for my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
-The framework in this repository, which is the code companion to a master's thesis at the [VUB](https://www.vub.be/), was created to verify if said PT have any adaptability in the EEG decoding field.
+Our contact information:
+| Name | Email address | Linkedin | GitHub |
+| :--- | :--- | :--- | :--- |
+| Wolf De Wulf | [wolf.de.wulf@vub.be](mailto:wolf.de.wulf@vub.be) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |
 
 ## Installation
 
-### 1. Virtual environment
+### 1. Installing requirements
 
-Firstly, create a new virtual python environment:
+Run the [`setup.sh`](requirements/local/setup.sh) script to create a virtual environment that has all
+the required python packages installed:
 
 ```console
-python -m venv env
+./requirements/local/setup.sh
 ```
 
 Then, activate that environment:
@@ -22,32 +24,30 @@ Then, activate that environment:
 source env/bin/activate
 ```
 
-Lastly, install the required libraries in the activated environment:
-
-```console
-pip install -r requirements.txt
-```
-
 To deactivate the virtual environment, use:
 
 ```console
 deactivate
 ```
 
-### 2. Environment variables
+### 2. Data and pretraining weights
 
-Add the `src` folder to the `PYTHONPATH` environment variable:
+Run the [`download.sh`](data/download.sh) script to download the data and the pretraining weights:
 
 ```console
-export PYTHONPATH=/path/to/fpt-for-eeg:$PYTHONPATH
+./data/download.sh
+```
+
+Run the [`process.py`](data/process.py) script to process the data:
+
+```console
+python data/process.py
 ```
 
 ## Usage
 
-To run the pipeline, use:
+Run the [`experiments.sh`](experiment.sh) script to run the experiments:
 
 ```console
-python scripts/run.py -h
+./experiments.sh
 ```
-
-The code in the `run.py` file allows for setting up different types of experiments.

@@ -7,15 +7,15 @@ python3 -m venv env
 source env/bin/activate
 
 # Install reqs
-pip3 install -r scripts/local/requirements.txt
+pip3 install -r requirements/local/requirements.txt
+
+# Install dn3
 git clone git@github.com:SPOClab-ca/dn3.git
 cd dn3
+sed -i '106d' dn3/utils.py
 python3 setup.py sdist
 pip3 install .
 
 # Cleanup
 cd ..
 rm -rf dn3
-
-# Add to pythonpath
-export $PYTHONPATH=/home/wolf/fpt-for-eeg:$PYTHONPATH

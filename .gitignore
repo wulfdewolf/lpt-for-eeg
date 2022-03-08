@@ -1,6 +1,8 @@
 **/env
 **/__pycache__
 **/wandb
-**/data
+**/*.mat
+**/*.fif
+**/*.pt
 **/.vscode
 **/models

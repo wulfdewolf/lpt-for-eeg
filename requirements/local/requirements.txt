@@ -1,0 +1,13 @@
+numpy
+tensorflow
+tensorflow_datasets
+torch
+torchvision
+tqdm
+transformers
+wandb
+pyyaml-include
+openpyxl
+mne
+parse
+moabb
