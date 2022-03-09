@@ -5,14 +5,6 @@ Configuratron:
   sfreq: 256
   deep1010:
     return_mask: False
-  pretrained_encoder: True
-  freeze_encoder: False
-  pretrained_transformer: True
-  freeze_transformer: True
-  freeze_pos: True
-  freeze_ln: False
-  freeze_attn: True
-  freeze_ff: False
 
 encoder_weights: data/weights/encoder.pt
 context_weights: data/weights/contextualizer.pt

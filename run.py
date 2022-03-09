@@ -38,11 +38,6 @@ if __name__ == "__main__":
         help="Fine-tune on target subject alone.",
     )
     parser.add_argument(
-        "--mdl",
-        action="store_true",
-        help="Fine-tune on target subject using all extra data.",
-    )
-    parser.add_argument(
         "--wandb",
         action="store_true",
         help="Log training to WandB.",
@@ -63,11 +58,51 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-workers", default=4, type=int, help="Number of dataloader workers."
     )
+    parser.add_argument(
+        "--pretrained-encoder",
+        action="store_true",
+        help="Whether or not to use a pretrained encoder.",
+    )
+    parser.add_argument(
+        "--freeze-encoder",
+        action="store_true",
+        help="Whether or not to freeze the encoder during fine-tuning.",
+    )
+    parser.add_argument(
+        "--pretrained-transformer",
+        action="store_true",
+        help="Whether or not to use a pretrained transformer (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
+        "--freeze-transformer",
+        action="store_true",
+        help="Whether or not to freeze the transformer during fine-tuning (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
+        "--freeze-pos",
+        action="store_true",
+        help="Whether or not to freeze the positional layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
+        "--freeze-ln",
+        action="store_true",
+        help="Whether or not to freeze the layer-norm layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
+        "--freeze-att",
+        action="store_true",
+        help="Whether or not to freeze the attention layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
+        "--freeze-ff",
+        action="store_true",
+        help="Whether or not to freeze the feed-forward networks of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+    )
     args = parser.parse_args()
     experiment = ExperimentConfig(args.ds_config)
-    params = experiment.experiment
 
     print("EXPERIMENT: " + args.name)
+    print(args.pretrained_encoder)
 
     # WandB
     if args.wandb:
@@ -98,19 +133,19 @@ if __name__ == "__main__":
                 model = FPTBENDR.from_dataset(
                     training,
                     multi_gpu=args.multi_gpu,
-                    pretrained=params["pretrained_transformer"],
-                    freeze_trans=params["freeze_transformer"],
-                    freeze_pos=params["freeze_pos"],
-                    freeze_ln=params["freeze_pos"],
-                    freeze_attn=params["freeze_attn"],
-                    freeze_ff=params["freeze_ff"],
+                    pretrained=args.pretrained_transformer,
+                    freeze_trans=args.freeze_transformer,
+                    freeze_pos=args.freeze_pos,
+                    freeze_ln=args.freeze_ln,
+                    freeze_attn=args.freeze_attn,
+                    freeze_ff=args.freeze_ff,
                 )
 
-            if params["pretrained_encoder"]:
+            if args.pretrained_encoder:
                 model.load_pretrained_modules(
                     experiment.encoder_weights,
                     experiment.context_weights,
-                    freeze_encoder=params["freeze_encoder"],
+                    freeze_encoder=args.freeze_encoder,
                 )
             process = StandardClassification(model, metrics=added_metrics)
             process.set_optimizer(
