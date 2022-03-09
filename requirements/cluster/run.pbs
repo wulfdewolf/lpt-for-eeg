@@ -12,4 +12,5 @@ module load wandb/0.12.5-GCCcore-10.2.0
 cd ~/fpt-for-eeg
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-python run.py --cluster
+python run.py --cluster --wandb --pretrained-encoder LINEARBENDR
+#python run.py --cluster --wandb --pretrained-encoder --pretrained-transformer FPTBENDR

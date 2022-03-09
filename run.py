@@ -8,6 +8,7 @@ import random
 import string
 import wandb
 import mne
+import os
 
 mne.set_log_level(False)
 
@@ -111,6 +112,13 @@ if __name__ == "__main__":
         )
         group_name = f"{args.name}-{args.model}-{experiment_id}"
         config = dict(**vars(args), **vars(experiment))
+
+    # Cluster specific things
+    if args.cluster:
+
+        # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
+        torch.set_num_threads(len(os.sched_getaffinity(0)))
+        torch.set_num_interop_threads(1)
 
     # Cross validation
     for ds_name, ds in tqdm.tqdm(
