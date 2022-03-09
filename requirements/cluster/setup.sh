@@ -3,7 +3,7 @@
 module load Python/3.8.6-GCCcore-10.2.0
 
 # Install reqs
-pip install --user -r scripts/cluster/requirements.txt
+pip install --user -r requirements/cluster/requirements.txt
 
 # Install dn3
 git clone git@github.com:SPOClab-ca/dn3.git
