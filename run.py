@@ -54,8 +54,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--optimise",
-        action="store_true",
-        help="Whether or not to run an optimisation task.",
+        default=None,
+        type=int,
+        help="Whether or not to optimise and how much random search tries should be executed.",
     )
     parser.add_argument(
         "--name",
@@ -128,7 +129,7 @@ if __name__ == "__main__":
 
     # Hyperparams
     ds_name, ds = list(experiment.datasets.items())[0]
-    if args.optimise:
+    if args.optimise is not None:
         hyperparams = {
             "lr": tune.loguniform(5e-5, 1e-1),
             "weight_decay": tune.loguniform(0.1, 1),
@@ -193,7 +194,7 @@ if __name__ == "__main__":
                     group=group_name,
                     project="fpt-for-eeg",
                     config=config,
-                    job_type="optimisation" if args.optimise else "CV",
+                    job_type="optimisation" if args.optimise is not None else "CV",
                     reinit=True,
                 )
                 wandb.watch(model)
@@ -257,7 +258,7 @@ if __name__ == "__main__":
                 )
 
             # Log averages to tune
-            if args.optimise:
+            if args.optimise is not None:
                 tune.report(loss=metrics["loss"], accuracy=metrics["Accuracy"])
 
             # explicitly garbage collect here, don't want to fit two models in GPU at once
@@ -269,7 +270,7 @@ if __name__ == "__main__":
                 run.finish()
 
     # Optimisation or simple run
-    if args.optimise:
+    if args.optimise is not None:
 
         # Tune scheduler
         scheduler = ASHAScheduler(
@@ -288,7 +289,7 @@ if __name__ == "__main__":
             run_fn,
             resources_per_trial={"cpu": 1, "gpu": 1},
             config=hyperparams,
-            num_samples=10,
+            num_samples=args.optimise,
             scheduler=scheduler,
             progress_reporter=reporter,
             local_dir="optimisation",
