@@ -127,14 +127,11 @@ if __name__ == "__main__":
             "weight_decay": tune.loguniform(0.1, 1),
             "batch_size": tune.choice([2, 4, 8, 16, 32, 64]),
             "epochs": tune.choice([2, 4, 8, 16, 32]),
+            "dropout": tune.loguniform(0.1, 2),
+            "orth_gain": tune.loguniform(0.1, 2),
         }
     else:
-        hyperparams = {
-            "lr": ds.lr,
-            "weight_decay": ds.weight_decay,
-            "batch_size": ds.train_params.batch_size,
-            "epochs": ds.train_params.epochs,
-        }
+        hyperparams = ds.train_params
 
     # WandB
     if args.wandb:
@@ -170,6 +167,8 @@ if __name__ == "__main__":
                     freeze_ln=args.freeze_ln,
                     freeze_attn=args.freeze_attn,
                     freeze_ff=args.freeze_ff,
+                    dropout=hyperparams["dropout"],
+                    orth_gain=hyperparams["orth_gain"],
                 )
 
             if args.pretrained_encoder:
@@ -286,7 +285,7 @@ if __name__ == "__main__":
         # Optimisation
         result = tune.run(
             run_fn,
-            resources_per_trial={"cpu": 1, "gpu": 1},
+            resources_per_trial={"cpu": 2, "gpu": 1},
             config=hyperparams,
             num_samples=args.optimise,
             scheduler=scheduler,
