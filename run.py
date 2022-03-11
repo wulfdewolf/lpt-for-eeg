@@ -197,7 +197,11 @@ if __name__ == "__main__":
                     group=group_name,
                     project="fpt-for-eeg",
                     config=config,
-                    job_type="optimisation" if args.optimise is not None else "CV",
+                    job_type="".join(
+                        random.choices(string.ascii_uppercase + string.digits, k=6)
+                    )
+                    if args.optimise is not None
+                    else "CV",
                     reinit=True,
                 )
                 wandb.watch(model)
