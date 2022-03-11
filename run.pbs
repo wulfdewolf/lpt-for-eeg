@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=fpt-for-eeg
 #SBATCH --time=24:00:00
-#SBATCH --gpus=1
-#SBATCH --cpus-per-gpu=2
+#SBATCH --nodes=2
+#SBATCH --gpus=2
+#SBATCH --cpus-per-gpu=4
 #SBATCH --partition=pascal_gpu
 
 module load PyTorch/1.7.1-fosscuda-2020b
