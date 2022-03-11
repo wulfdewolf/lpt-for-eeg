@@ -130,8 +130,8 @@ if __name__ == "__main__":
             "weight_decay": tune.loguniform(0.1, 1),
             "batch_size": tune.choice([2, 4, 8, 16, 32, 64]),
             "epochs": tune.choice([2, 4, 8, 16, 32]),
-            "enc_do": tune.loguniform(0.1, 2),
-            "feat_do": tune.loguniform(0.1, 2),
+            "enc_do": tune.loguniform(0.001, 1.0),
+            "feat_do": tune.loguniform(0.001, 1.0),
             "orth_gain": tune.loguniform(0.1, 2),
         }
     else:
@@ -191,7 +191,7 @@ if __name__ == "__main__":
                     random.choices(string.ascii_uppercase + string.digits, k=6)
                 )
                 group_name = f"{args.name}-{args.model}-{run_id}"
-                config = dict(**vars(args), **vars(experiment), **vars(hyperparams))
+                config = dict(**vars(args), **vars(experiment), hyperparams=hyperparams)
                 run = wandb.init(
                     name="subject " + str(fold + 1),
                     group=group_name,
