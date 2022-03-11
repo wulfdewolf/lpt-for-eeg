@@ -174,8 +174,8 @@ if __name__ == "__main__":
 
             if args.pretrained_encoder:
                 model.load_pretrained_modules(
-                    experiment.encoder_weights,
-                    experiment.context_weights,
+                    cwd + "/" + experiment.encoder_weights,
+                    cwd + "/" + experiment.context_weights,
                     freeze_encoder=args.freeze_encoder,
                 )
             process = StandardClassification(model, metrics=added_metrics)
