@@ -128,7 +128,8 @@ class FPTBENDR(Classifier):
         samples,
         channels,
         encoder_h=512,
-        dropout=0.0,
+        feat_do=0.0,
+        enc_do=0.0,
         orth_gain=1.41,
         multi_gpu=False,
         projection_head=False,
@@ -152,7 +153,7 @@ class FPTBENDR(Classifier):
         self.encoder = ConvEncoderBENDR(
             channels,
             encoder_h=encoder_h,
-            dropout=dropout,
+            dropout=enc_do,
             projection_head=projection_head,
         )
         tqdm.tqdm.write(self.encoder.description(sequence_len=samples))
@@ -168,7 +169,7 @@ class FPTBENDR(Classifier):
         connection_linear.bias.data.zero_()
 
         in_layers.append(connection_linear)
-        in_layers.append(nn.Dropout(dropout))
+        in_layers.append(nn.Dropout(feat_do))
 
         self.in_net = nn.Sequential(*in_layers)
         self.in_net = nn.DataParallel(self.in_net) if multi_gpu else self.in_net

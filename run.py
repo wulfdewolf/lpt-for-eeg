@@ -111,6 +111,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     experiment = ExperimentConfig(args.ds_config)
+    cwd = os.getcwd()
 
     # Cluster specific things
     if args.cluster:
@@ -119,31 +120,24 @@ if __name__ == "__main__":
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
-    # Hyperparams
+    # Dataset
     ds_name, ds = list(experiment.datasets.items())[0]
+
+    # Hyperparams
     if args.optimise is not None:
         hyperparams = {
             "lr": tune.loguniform(5e-5, 1e-1),
             "weight_decay": tune.loguniform(0.1, 1),
             "batch_size": tune.choice([2, 4, 8, 16, 32, 64]),
             "epochs": tune.choice([2, 4, 8, 16, 32]),
-            "dropout": tune.loguniform(0.1, 2),
+            "enc_do": tune.loguniform(0.1, 2),
+            "feat_do": tune.loguniform(0.1, 2),
             "orth_gain": tune.loguniform(0.1, 2),
         }
     else:
         hyperparams = ds.train_params
 
-    # WandB
-    if args.wandb:
-        experiment_id = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=6)
-        )
-        group_name = f"{args.name}-{args.model}-{experiment_id}"
-        config = dict(**vars(args), **vars(experiment))
-
     # Training function
-    cwd = os.getcwd()
-
     def run_fn(hyperparams):
 
         # Cross validation
@@ -156,7 +150,11 @@ if __name__ == "__main__":
             tqdm.tqdm.write(torch.cuda.memory_summary())
 
             if args.model == utils.MODEL_CHOICES[0]:
-                model = LinearHeadBENDR.from_dataset(training)
+                model = LinearHeadBENDR.from_dataset(
+                    training,
+                    enc_do=hyperparams["enc_do"],
+                    feat_do=hyperparams["feat_do"],
+                )
             else:
                 model = FPTBENDR.from_dataset(
                     training,
@@ -167,7 +165,8 @@ if __name__ == "__main__":
                     freeze_ln=args.freeze_ln,
                     freeze_attn=args.freeze_attn,
                     freeze_ff=args.freeze_ff,
-                    dropout=hyperparams["dropout"],
+                    enc_do=hyperparams["enc_do"],
+                    feat_do=hyperparams["feat_do"],
                     orth_gain=hyperparams["orth_gain"],
                 )
 
@@ -188,9 +187,13 @@ if __name__ == "__main__":
 
             # WandB
             if args.wandb:
-                config["hyperparams"] = hyperparams
+                run_id = "".join(
+                    random.choices(string.ascii_uppercase + string.digits, k=6)
+                )
+                group_name = f"{args.name}-{args.model}-{run_id}"
+                config = dict(**vars(args), **vars(experiment), **vars(hyperparams))
                 run = wandb.init(
-                    name="subject " + str(fold),
+                    name="subject " + str(fold + 1),
                     group=group_name,
                     project="fpt-for-eeg",
                     config=config,
