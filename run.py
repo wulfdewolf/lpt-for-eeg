@@ -112,14 +112,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     experiment = ExperimentConfig(args.ds_config)
 
-    # WandB
-    if args.wandb:
-        experiment_id = "".join(
-            random.choices(string.ascii_uppercase + string.digits, k=6)
-        )
-        group_name = f"{args.name}-{args.model}-{experiment_id}"
-        config = dict(**vars(args), **vars(experiment))
-
     # Cluster specific things
     if args.cluster:
 
@@ -143,6 +135,14 @@ if __name__ == "__main__":
             "batch_size": ds.train_params.batch_size,
             "epochs": ds.train_params.epochs,
         }
+
+    # WandB
+    if args.wandb:
+        experiment_id = "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=6)
+        )
+        group_name = f"{args.name}-{args.model}-{experiment_id}"
+        config = dict(**vars(args), **vars(experiment))
 
     # Training function
     cwd = os.getcwd()
@@ -189,6 +189,7 @@ if __name__ == "__main__":
 
             # WandB
             if args.wandb:
+                config["hyperparams"] = hyperparams
                 run = wandb.init(
                     name="subject " + str(fold),
                     group=group_name,
