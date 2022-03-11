@@ -209,17 +209,15 @@ if __name__ == "__main__":
                 def epoch_callback(validation_metrics, tr_accuracy=[], tr_loss=[]):
                     wandb.log(
                         {
-                            "Average training accuracy": sum(tr_accuracy)
+                            "Average Train Accuracy": sum(tr_accuracy)
                             / len(tr_accuracy),
-                            "Average training loss": sum(tr_loss) / len(tr_loss),
-                            "Start training accuracy": tr_accuracy[0],
-                            "Start training accuracy": tr_accuracy[0],
-                            "End training loss": tr_loss[-1],
-                            "End training loss": tr_loss[-1],
-                            "Average validation accuracy": validation_metrics[
+                            "Average Train loss": sum(tr_loss) / len(tr_loss),
+                            "Start Train Accuracy": tr_accuracy[0],
+                            "Final Train Loss": tr_loss[-1],
+                            "Average Validation Accuracy": validation_metrics[
                                 "Accuracy"
                             ],
-                            "Average validation loss": validation_metrics["loss"],
+                            "Average Validation Loss": validation_metrics["loss"],
                         }
                     )
                     tr_accuracy = []
@@ -252,8 +250,8 @@ if __name__ == "__main__":
             if args.wandb:
                 wandb.log(
                     {
-                        "Test accuracy": metrics["Accuracy"],
-                        "Test loss": metrics["loss"],
+                        "Test Accuracy": metrics["Accuracy"],
+                        "Test Loss": metrics["loss"],
                     }
                 )
 
