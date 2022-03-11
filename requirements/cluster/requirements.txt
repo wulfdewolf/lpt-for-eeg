@@ -2,3 +2,4 @@ transformers
 parse
 pyyaml-include
 openpyxl
+ray[tune]

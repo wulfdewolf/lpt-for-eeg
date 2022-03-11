@@ -5,4 +5,4 @@
 **/*.fif
 **/*.pt
 **/.vscode
-**/models
+**/optimisation

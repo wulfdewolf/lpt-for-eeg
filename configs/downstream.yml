@@ -5,6 +5,7 @@ Configuratron:
   sfreq: 256
   deep1010:
     return_mask: False
+  relative_directory: /home/wolf/fpt-for-eeg
 
 encoder_weights: data/weights/encoder.pt
 context_weights: data/weights/contextualizer.pt

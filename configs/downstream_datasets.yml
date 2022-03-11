@@ -14,3 +14,4 @@ bci_iv_2a:
     epochs: 15
     batch_size: 60 # This dataset likes batches of ~60 (community is overfitting this)
   lr: 0.00005
+  weight_decay: 0.05

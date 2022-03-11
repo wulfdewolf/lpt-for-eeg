@@ -11,3 +11,4 @@ openpyxl
 mne
 parse
 moabb
+ray[tune]
