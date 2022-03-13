@@ -149,8 +149,8 @@ if __name__ == "__main__":
         run_type = "".join(random.choices(string.ascii_uppercase + string.digits, k=6)) if args.optimise is not None else "CV"
 
         # Test scores
-        test_acc = 0
-        test_loss = 0
+        test_acc = [] 
+        test_loss = []
 
         # Optional additional metrics
         added_metrics, retain_best, _ = utils.get_ds_added_metrics(
@@ -158,9 +158,7 @@ if __name__ == "__main__":
         )
 
         # Cross validation
-        lmoso_iterator = enumerate(tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds)))
-        n_subjects = len(lmoso_iterator)
-        for fold, (training, validation, test) in iterator: 
+        for fold, (training, validation, test) in enumerate(tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds))): 
             tqdm.tqdm.write(torch.cuda.memory_summary())
 
             if args.model == utils.MODEL_CHOICES[0]:
@@ -261,8 +259,8 @@ if __name__ == "__main__":
 
             # Test scores
             metrics = process.evaluate(test)
-            test_acc += metrics["Accuracy"]
-            test_loss += loss["loss"]
+            test_acc.append(metrics["Accuracy"])
+            test_loss.append(loss["loss"])
 
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
@@ -274,14 +272,14 @@ if __name__ == "__main__":
 
         # Log test averages to tune
         if args.optimise is not None:
-            tune.report(loss=test_loss / n_subjects, accuracy=test_acc / n_subjects)
+            tune.report(loss=test_loss / len(test_loss), accuracy=test_acc / len(test_acc))
 
         # Log test averages to WandB
         if args.wandb:
             wandb.log(
                 {
-                    "Test Accuracy": test_acc / n_subjects,
-                    "Test Loss": test_loss / n_subjects,
+                    "Test Accuracy": test_acc / len(test_acc),
+                    "Test Loss": test_loss / len(test_loss),
                 }
             )
 
