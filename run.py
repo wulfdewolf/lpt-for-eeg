@@ -158,11 +158,9 @@ if __name__ == "__main__":
         )
 
         # Cross validation
-        lmoso_iterator = utils.get_lmoso_iterator(ds_name, ds)
+        lmoso_iterator = enumerate(tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds)))
         n_subjects = len(lmoso_iterator)
-        for fold, (training, validation, test) in enumerate(
-            tqdm.tqdm(lmoso_iteratior)
-        ):
+        for fold, (training, validation, test) in iterator: 
             tqdm.tqdm.write(torch.cuda.memory_summary())
 
             if args.model == utils.MODEL_CHOICES[0]:
