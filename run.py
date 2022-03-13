@@ -200,7 +200,7 @@ if __name__ == "__main__":
             # WandB
             if args.wandb:
                 group_name = f"{args.name}-{args.model}-{run_id}"
-                config = dict(**vars(args), **vars(experiment), hyperparams=hyperparams)
+                config = dict(**vars(args), **vars(experiment), hyperparams=hyperparams, run_type=run_type)
                 run = wandb.init(
                     name="subject " + str(fold + 1),
                     group=group_name,
