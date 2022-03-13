@@ -137,15 +137,31 @@ if __name__ == "__main__":
     else:
         hyperparams = ds.train_params
 
-    # Training function
+    # Run id
+    run_id = "".join(
+        random.choices(string.ascii_uppercase + string.digits, k=6)
+    )
+
+    # Run function
     def run_fn(hyperparams):
 
-        # Cross validation
+        # Run type
+        run_type = "".join(random.choices(string.ascii_uppercase + string.digits, k=6)) if args.optimise is not None else "CV"
+
+        # Test scores
+        test_acc = 0
+        test_loss = 0
+
+        # Optional additional metrics
         added_metrics, retain_best, _ = utils.get_ds_added_metrics(
             ds_name, cwd + "/" + args.metrics_config
         )
+
+        # Cross validation
+        lmoso_iterator = utils.get_lmoso_iterator(ds_name, ds)
+        n_subjects = len(lmoso_iterator)
         for fold, (training, validation, test) in enumerate(
-            tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds))
+            tqdm.tqdm(lmoso_iteratior)
         ):
             tqdm.tqdm.write(torch.cuda.memory_summary())
 
@@ -187,9 +203,6 @@ if __name__ == "__main__":
 
             # WandB
             if args.wandb:
-                run_id = "".join(
-                    random.choices(string.ascii_uppercase + string.digits, k=6)
-                )
                 group_name = f"{args.name}-{args.model}-{run_id}"
                 config = dict(**vars(args), **vars(experiment), hyperparams=hyperparams)
                 run = wandb.init(
@@ -197,11 +210,7 @@ if __name__ == "__main__":
                     group=group_name,
                     project="fpt-for-eeg",
                     config=config,
-                    job_type="".join(
-                        random.choices(string.ascii_uppercase + string.digits, k=6)
-                    )
-                    if args.optimise is not None
-                    else "CV",
+                    job_type=run_type,
                     reinit=True,
                 )
                 wandb.watch(model)
@@ -254,25 +263,29 @@ if __name__ == "__main__":
 
             # Test scores
             metrics = process.evaluate(test)
-            if args.wandb:
-                wandb.log(
-                    {
-                        "Test Accuracy": metrics["Accuracy"],
-                        "Test Loss": metrics["loss"],
-                    }
-                )
+            test_acc += metrics["Accuracy"]
+            test_loss += loss["loss"]
 
-            # Log averages to tune
-            if args.optimise is not None:
-                tune.report(loss=metrics["loss"], accuracy=metrics["Accuracy"])
-
-            # explicitly garbage collect here, don't want to fit two models in GPU at once
+            # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
             del model
             torch.cuda.synchronize()
             time.sleep(10)
             if args.wandb:
                 run.finish()
+
+        # Log test averages to tune
+        if args.optimise is not None:
+            tune.report(loss=test_loss / n_subjects, accuracy=test_acc / n_subjects)
+
+        # Log test averages to WandB
+        if args.wandb:
+            wandb.log(
+                {
+                    "Test Accuracy": test_acc / n_subjects,
+                    "Test Loss": test_loss / n_subjects,
+                }
+            )
 
     # Optimisation or simple run
     if args.optimise is not None:
