@@ -272,14 +272,14 @@ if __name__ == "__main__":
 
         # Log test averages to tune
         if args.optimise is not None:
-            tune.report(loss=test_loss / len(test_loss), accuracy=test_acc / len(test_acc))
+            tune.report(loss=sum(test_loss) / len(test_loss), accuracy=sum(test_acc) / len(test_acc))
 
         # Log test averages to WandB
         if args.wandb:
             wandb.log(
                 {
-                    "Test Accuracy": test_acc / len(test_acc),
-                    "Test Loss": test_loss / len(test_loss),
+                    "Test Accuracy": sum(test_acc) / len(test_acc),
+                    "Test Loss": sum(test_loss) / len(test_loss),
                 }
             )
 
