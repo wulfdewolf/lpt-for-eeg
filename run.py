@@ -260,7 +260,7 @@ if __name__ == "__main__":
             # Test scores
             metrics = process.evaluate(test)
             test_acc.append(metrics["Accuracy"])
-            test_loss.append(loss["loss"])
+            test_loss.append(metrics["loss"])
 
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
