@@ -262,6 +262,16 @@ if __name__ == "__main__":
             test_acc.append(metrics["Accuracy"])
             test_loss.append(metrics["loss"])
 
+            # Log test scores
+            if args.wandb:
+                wandb.log(
+                    {
+                        "Test Accuracy": metrics["Accuracy"],
+                        "Test Loss": metrics["loss"],
+                    }
+                )
+
+
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
             del model
@@ -273,15 +283,6 @@ if __name__ == "__main__":
         # Log test averages to tune
         if args.optimise is not None:
             tune.report(loss=sum(test_loss) / len(test_loss), accuracy=sum(test_acc) / len(test_acc))
-
-        # Log test averages to WandB
-        if args.wandb:
-            wandb.log(
-                {
-                    "Test Accuracy": sum(test_acc) / len(test_acc),
-                    "Test Loss": sum(test_loss) / len(test_loss),
-                }
-            )
 
     # Optimisation or simple run
     if args.optimise is not None:
