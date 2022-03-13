@@ -128,7 +128,7 @@ if __name__ == "__main__":
         hyperparams = {
             "lr": tune.loguniform(5e-5, 1e-1),
             "weight_decay": tune.loguniform(0.1, 1),
-            "batch_size": tune.choice([2, 4, 8, 16, 32, 64]),
+            "batch_size": tune.choice([2, 4, 8, 16, 32, 64, 80, 128]),
             "epochs": tune.choice([2, 4, 8, 16, 32]),
             "enc_do": tune.loguniform(0.001, 1.0),
             "feat_do": tune.loguniform(0.001, 1.0),
