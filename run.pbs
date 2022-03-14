@@ -2,7 +2,7 @@
 #SBATCH --job-name=fpt-for-eeg
 #SBATCH --time=24:00:00
 #SBATCH --gpus=4
-#SBATCH --cpus-per-gpu=4
+#SBATCH --cpus-per-gpu=2
 #SBATCH --partition=kepler_gpu
 
 module load PyTorch/1.7.1-fosscuda-2020b

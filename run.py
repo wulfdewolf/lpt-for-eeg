@@ -313,7 +313,7 @@ if __name__ == "__main__":
         # Optimisation
         result = tune.run(
             run_fn,
-            resources_per_trial={"cpu": 4, "gpu": 1},
+            resources_per_trial={"cpu": 2, "gpu": 1},
             config=hyperparams,
             num_samples=args.optimise,
             scheduler=scheduler,
