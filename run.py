@@ -128,8 +128,8 @@ if __name__ == "__main__":
         hyperparams = {
             "lr": tune.loguniform(5e-5, 1e-1),
             "weight_decay": tune.loguniform(0.1, 1),
-            "batch_size": tune.choice([2, 4, 8, 16, 32, 64, 80, 128]),
-            "epochs": tune.choice([2, 4, 8, 16, 32]),
+            "batch_size": tune.choice([16, 32, 64, 80, 128]),
+            "epochs": tune.choice([4, 8, 16, 32]),
             "enc_do": tune.loguniform(0.001, 1.0),
             "feat_do": tune.loguniform(0.001, 1.0),
             "orth_gain": tune.loguniform(0.1, 2),
@@ -138,18 +138,20 @@ if __name__ == "__main__":
         hyperparams = ds.train_params
 
     # Run id
-    run_id = "".join(
-        random.choices(string.ascii_uppercase + string.digits, k=6)
-    )
+    run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     # Run function
     def run_fn(hyperparams):
 
         # Run type
-        run_type = "".join(random.choices(string.ascii_uppercase + string.digits, k=6)) if args.optimise is not None else "CV"
+        run_type = (
+            "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if args.optimise is not None
+            else "CV"
+        )
 
         # Test scores
-        test_acc = [] 
+        test_acc = []
         test_loss = []
 
         # Optional additional metrics
@@ -158,7 +160,9 @@ if __name__ == "__main__":
         )
 
         # Cross validation
-        for fold, (training, validation, test) in enumerate(tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds))): 
+        for fold, (training, validation, test) in enumerate(
+            tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds))
+        ):
             tqdm.tqdm.write(torch.cuda.memory_summary())
 
             if args.model == utils.MODEL_CHOICES[0]:
@@ -200,7 +204,12 @@ if __name__ == "__main__":
             # WandB
             if args.wandb:
                 group_name = f"{args.name}-{args.model}-{run_id}"
-                config = dict(**vars(args), **vars(experiment), hyperparams=hyperparams, run_type=run_type)
+                config = dict(
+                    **vars(args),
+                    **vars(experiment),
+                    hyperparams=hyperparams,
+                    run_type=run_type,
+                )
                 run = wandb.init(
                     name="subject " + str(fold + 1),
                     group=group_name,
@@ -271,7 +280,6 @@ if __name__ == "__main__":
                     }
                 )
 
-
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
             del model
@@ -282,7 +290,10 @@ if __name__ == "__main__":
 
         # Log test averages to tune
         if args.optimise is not None:
-            tune.report(loss=sum(test_loss) / len(test_loss), accuracy=sum(test_acc) / len(test_acc))
+            tune.report(
+                loss=sum(test_loss) / len(test_loss),
+                accuracy=sum(test_acc) / len(test_acc),
+            )
 
     # Optimisation or simple run
     if args.optimise is not None:
