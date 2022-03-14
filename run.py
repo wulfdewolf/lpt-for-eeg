@@ -22,6 +22,8 @@ from dn3_ext import LinearHeadBENDR, FPTBENDR
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.schedulers import ASHAScheduler
+from hyperopt import hp
+from ray.tune.suggest.hyperopt import HyperOptSearch
 
 
 if __name__ == "__main__":
@@ -126,13 +128,13 @@ if __name__ == "__main__":
     # Hyperparams
     if args.optimise is not None:
         hyperparams = {
-            "lr": tune.loguniform(5e-5, 1e-1),
-            "weight_decay": tune.loguniform(0.1, 1),
-            "batch_size": tune.choice([16, 32, 64, 80, 128]),
-            "epochs": tune.choice([4, 8, 16, 32]),
-            "enc_do": tune.loguniform(0.001, 1.0),
-            "feat_do": tune.loguniform(0.001, 1.0),
-            "orth_gain": tune.loguniform(0.1, 2),
+            "lr": hp.loguniform("lr", 5e-5, 1e-1),
+            "weight_decay": hp.loguniform("weight_decay", 0.1, 1),
+            "batch_size": hp.uniform("batch_size", 16, 128),
+            "epochs": hp.uniform("epochs", 4, 32),
+            "enc_do": hp.loguniform("enc_do", 0.001, 1.0),
+            "feat_do": hp.loguniform("feat_do", 0.001, 1.0),
+            "orth_gain": hp.loguniform("orth_gain", 0.1, 2),
         }
     else:
         hyperparams = ds.train_params
@@ -149,10 +151,6 @@ if __name__ == "__main__":
             if args.optimise is not None
             else "CV"
         )
-
-        # Test scores
-        test_acc = []
-        test_loss = []
 
         # Optional additional metrics
         added_metrics, retain_best, _ = utils.get_ds_added_metrics(
@@ -268,16 +266,21 @@ if __name__ == "__main__":
 
             # Test scores
             metrics = process.evaluate(test)
-            test_acc.append(metrics["Accuracy"])
-            test_loss.append(metrics["loss"])
 
-            # Log test scores
+            # Log test scores to WandB
             if args.wandb:
                 wandb.log(
                     {
                         "Test Accuracy": metrics["Accuracy"],
                         "Test Loss": metrics["loss"],
                     }
+                )
+
+            # Log test scores to tune
+            if args.optimise is not None:
+                tune.report(
+                    loss=metrics["loss"],
+                    accuracy=metrics["Accuracy"],
                 )
 
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
@@ -287,13 +290,6 @@ if __name__ == "__main__":
             time.sleep(10)
             if args.wandb:
                 run.finish()
-
-        # Log test averages to tune
-        if args.optimise is not None:
-            tune.report(
-                loss=sum(test_loss) / len(test_loss),
-                accuracy=sum(test_acc) / len(test_acc),
-            )
 
     # Optimisation or simple run
     if args.optimise is not None:
@@ -310,14 +306,17 @@ if __name__ == "__main__":
         # Tune reporter
         reporter = CLIReporter(metric_columns=["loss", "accuracy"])
 
+        # Tune algorithm
+        hyperopt_search = HyperOptSearch(hyperparams, metric="loss", mode="min")
+
         # Optimisation
         result = tune.run(
             run_fn,
             resources_per_trial={"cpu": 2, "gpu": 1},
-            config=hyperparams,
             num_samples=args.optimise,
             scheduler=scheduler,
             progress_reporter=reporter,
+            search_alg=hyperopt_search,
             local_dir="optimisation",
         )
 
