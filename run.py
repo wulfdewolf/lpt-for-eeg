@@ -9,7 +9,7 @@ import string
 import wandb
 import mne
 import os
-import math
+import numpy as np
 
 mne.set_log_level(False)
 
@@ -133,8 +133,8 @@ if __name__ == "__main__":
             "weight_decay": hp.loguniform("weight_decay", 0.1, 1),
             "batch_size": hp.choice("batch_size", [8, 16, 32, 64, 80, 100, 128]),
             "epochs": hp.choice("epochs", [4, 8, 16, 32]),
-            "enc_do": hp.uniform("enc_do", math.log(0.001), math.log(1.0)),
-            "feat_do": hp.uniform("feat_do", math.log(0.001), math.log(1.0)),
+            "enc_do": hp.uniform("enc_do", np.log(0.001), np.log(1.0)),
+            "feat_do": hp.uniform("feat_do", np.log(0.001), np.log(1.0)),
             "orth_gain": hp.loguniform("orth_gain", 0.1, 2),
         }
     else:
