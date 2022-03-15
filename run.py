@@ -153,6 +153,10 @@ if __name__ == "__main__":
             else "CV"
         )
 
+        # Test scores
+        test_loss = []
+        test_acc = []
+
         # Optional additional metrics
         added_metrics, retain_best, _ = utils.get_ds_added_metrics(
             ds_name, cwd + "/" + args.metrics_config
@@ -267,6 +271,8 @@ if __name__ == "__main__":
 
             # Test scores
             metrics = process.evaluate(test)
+            test_loss.append(metrics["loss"])
+            test_acc.append(metrics["Accuracy"])
 
             # Log test scores to WandB
             if args.wandb:
@@ -277,13 +283,6 @@ if __name__ == "__main__":
                     }
                 )
 
-            # Log test scores to tune
-            if args.optimise is not None:
-                tune.report(
-                    loss=metrics["loss"],
-                    accuracy=metrics["Accuracy"],
-                )
-
             # Explicitly garbage collect here, don't want to fit two models in GPU at once
             del process
             del model
@@ -291,6 +290,13 @@ if __name__ == "__main__":
             time.sleep(10)
             if args.wandb:
                 run.finish()
+
+        # Log test scores to tune
+        if args.optimise is not None:
+            tune.report(
+                loss=sum(test_loss) / len(test_loss),
+                accuracy=sum(test_acc) / len(test_acc),
+            )
 
     # Optimisation or simple run
     if args.optimise is not None:
