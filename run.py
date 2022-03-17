@@ -88,9 +88,10 @@ if __name__ == "__main__":
         help="Whether or not to use a pretrained transformer (only for when FPTBENDR chosen).",
     )
     parser.add_argument(
-        "--freeze-transformer",
-        action="store_true",
-        help="Whether or not to freeze the transformer during fine-tuning (only for when FPTBENDR chosen).",
+        "--freeze-transformer-layers",
+        nargs="*",
+        default=[],
+        help="The transformer layers to freeze, in the case of GPT2: 0-11 (only for when FPTBENDR chosen).",
     )
     parser.add_argument(
         "--freeze-pos",
@@ -179,7 +180,7 @@ if __name__ == "__main__":
                     training,
                     multi_gpu=args.multi_gpu,
                     pretrained=args.pretrained_transformer,
-                    freeze_trans=args.freeze_transformer,
+                    freeze_trans_layers=args.freeze_transformer_layers,
                     freeze_pos=args.freeze_pos,
                     freeze_ln=args.freeze_ln,
                     freeze_attn=args.freeze_attn,
