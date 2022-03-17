@@ -188,8 +188,7 @@ class FPTBENDR(Classifier):
         for name, p in transformer.named_parameters():
             name = name.lower()
 
-            if any(str(layer) in name for layer in freeze_trans_layers):
-                print("gothere")
+            if any("." + str(layer) + "." in name for layer in freeze_trans_layers):
                 if "ln" in name or "norm" in name:
                     p.requires_grad = not freeze_ln
                 elif (
@@ -202,10 +201,7 @@ class FPTBENDR(Classifier):
                     p.requires_grad = not freeze_attn
 
             elif not any(char.isdigit() for char in name):
-                print("gothereeee")
                 p.requires_grad = False
-
-        quit()
 
         self.transformer = transformer
         self.transformer = (
