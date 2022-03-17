@@ -205,7 +205,7 @@ class FPTBENDR(Classifier):
                 print("gothereeee")
                 p.requires_grad = False
 
-        quit(
+        quit()
 
         self.transformer = transformer
         self.transformer = (
