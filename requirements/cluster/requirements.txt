@@ -3,3 +3,4 @@ parse
 pyyaml-include
 openpyxl
 ray[tune]
+hyperopt

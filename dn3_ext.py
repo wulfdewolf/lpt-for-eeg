@@ -134,7 +134,7 @@ class FPTBENDR(Classifier):
         multi_gpu=False,
         projection_head=False,
         pretrained=False,
-        freeze_trans=False,
+        freeze_trans_layers=[],
         freeze_pos=False,
         freeze_ln=False,
         freeze_attn=False,
@@ -185,9 +185,11 @@ class FPTBENDR(Classifier):
         else:
             transformer = GPT2Model(pretrained_transformer.config)
 
-        if freeze_trans:
-            for name, p in transformer.named_parameters():
-                name = name.lower()
+        for name, p in transformer.named_parameters():
+            name = name.lower()
+
+            if any(str(layer) in name for layer in freeze_trans_layers):
+                print("gothere")
                 if "ln" in name or "norm" in name:
                     p.requires_grad = not freeze_ln
                 elif (
@@ -198,8 +200,12 @@ class FPTBENDR(Classifier):
                     p.requires_grad = not freeze_ff
                 elif "attn" in name:
                     p.requires_grad = not freeze_attn
-                else:
-                    p.requires_grad = False
+
+            elif not any(char.isdigit() for char in name):
+                print("gothereeee")
+                p.requires_grad = False
+
+        quit(
 
         self.transformer = transformer
         self.transformer = (
