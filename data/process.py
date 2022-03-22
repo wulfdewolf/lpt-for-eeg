@@ -81,6 +81,7 @@ for type, folder in zip(
             events = np.column_stack(
                 (run.trial, np.zeros(len(run.y), dtype=int), run.y)
             )
+            print(event_ids)
 
             # Annotations
             annotations = mne.annotations_from_events(
