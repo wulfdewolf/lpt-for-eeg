@@ -143,7 +143,7 @@ if __name__ == "__main__":
             "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
             "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
             "orth_gain": hp.loguniform("orth_gain", np.log(0.001), np.log(2.0)),
-            "freeze_until": hp.uniform("freeze_until", 0, 11),
+            "freeze_until": hp.randint("freeze_until", 11),
         }
     else:
         hyperparams = ds.train_params
