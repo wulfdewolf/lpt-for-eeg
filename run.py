@@ -94,6 +94,12 @@ if __name__ == "__main__":
         help="The transformer layers to freeze, in the case of GPT2: 0-11 (only for when FPTBENDR chosen).",
     )
     parser.add_argument(
+        "--freeze-transformer-layers-until",
+        default=None,
+        type=int,
+        help="The transformer layers to freeze, starting from 0 to the specified number, in the case of GPT2 maximum 11 (only for when FPTBENDR chosen).",
+    )
+    parser.add_argument(
         "--freeze-pos",
         action="store_true",
         help="Whether or not to freeze the positional layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
@@ -137,6 +143,7 @@ if __name__ == "__main__":
             "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
             "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
             "orth_gain": hp.loguniform("orth_gain", np.log(0.1), np.log(2)),
+            "freeze_until": hp.uniform("freeze_until", 0, 11),
         }
     else:
         hyperparams = ds.train_params
@@ -181,6 +188,7 @@ if __name__ == "__main__":
                     multi_gpu=args.multi_gpu,
                     pretrained=args.pretrained_transformer,
                     freeze_trans_layers=args.freeze_transformer_layers,
+                    freeze_trans_layers_until=hyperparams["freeze_until"],
                     freeze_pos=args.freeze_pos,
                     freeze_ln=args.freeze_ln,
                     freeze_attn=args.freeze_attn,

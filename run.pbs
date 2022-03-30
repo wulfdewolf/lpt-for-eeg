@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=fpt-for-eeg
-#SBATCH --time=24:00:00
+#SBATCH --time=100:00:00
 #SBATCH --gpus=2
 #SBATCH --cpus-per-gpu=2
-#SBATCH --partition=pascal_gpu
+#SBATCH --partition=kepler_gpu
 
 module load PyTorch/1.7.1-fosscuda-2020b
 module load torchvision/0.8.2-fosscuda-2020b-PyTorch-1.7.1
@@ -12,7 +12,6 @@ module load wandb/0.12.5-GCCcore-10.2.0
 cd ~/fpt-for-eeg
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-python run.py FPTBENDR --cluster --wandb --optimise 10 \
+python run.py FPTBENDR --cluster --wandb --optimise 100 \
                        --pretrained-encoder --freeze-encoder \
-                       --freeze-pos --freeze-ln --freeze-attn --freeze-ff \
-                       --freeze-transformer-layers 6 7 8 9 10 11 
+                       --freeze-pos --freeze-ff

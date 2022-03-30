@@ -135,6 +135,7 @@ class FPTBENDR(Classifier):
         projection_head=False,
         pretrained=False,
         freeze_trans_layers=[],
+        freeze_trans_layers_until=None,
         freeze_pos=False,
         freeze_ln=False,
         freeze_attn=False,
@@ -188,7 +189,10 @@ class FPTBENDR(Classifier):
         for name, p in transformer.named_parameters():
             name = name.lower()
 
-            if any("." + str(layer) + "." in name for layer in freeze_trans_layers):
+            if (
+                freeze_trans_layers_until is not None
+                and "." + str(freeze_trans_layers_until) + "." in name
+            ) or any("." + str(layer) + "." in name for layer in freeze_trans_layers):
                 if "ln" in name or "norm" in name:
                     p.requires_grad = not freeze_ln
                 elif (
