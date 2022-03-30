@@ -137,12 +137,12 @@ if __name__ == "__main__":
     if args.optimise is not None:
         hyperparams = {
             "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
-            "weight_decay": hp.loguniform("weight_decay", np.log(0.1), np.log(1)),
+            "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
             "batch_size": hp.choice("batch_size", [8, 16, 32, 64, 80, 100, 128]),
             "epochs": hp.choice("epochs", [4, 8, 16, 32]),
             "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
             "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
-            "orth_gain": hp.loguniform("orth_gain", np.log(0.1), np.log(2)),
+            "orth_gain": hp.loguniform("orth_gain", np.log(0.001), np.log(2.0)),
             "freeze_until": hp.uniform("freeze_until", 0, 11),
         }
     else:
