@@ -40,6 +40,11 @@ if __name__ == "__main__":
         help="Where the listings for config " "metrics are stored.",
     )
     parser.add_argument(
+        "--subject-specific",
+        action="store_true",
+        help="Fine-tune on target subject alone.",
+    )
+    parser.add_argument(
         "--wandb",
         action="store_true",
         help="Log training to WandB.",
@@ -59,6 +64,14 @@ if __name__ == "__main__":
         "--name",
         default="thesis",
         help="Name of experiment.",
+    )
+    parser.add_argument(
+        "--num-workers", default=4, type=int, help="Number of dataloader workers."
+    )
+    parser.add_argument(
+        "--num-workers-test",
+        action="store_true",
+        help="Whether or not to run the num_workers test snippet, overwrites the value of --num-workers.",
     )
     parser.add_argument(
         "--pretrained-encoder",
@@ -111,7 +124,7 @@ if __name__ == "__main__":
     experiment = ExperimentConfig(args.ds_config)
     cwd = os.getcwd()
 
-    # Cluster specific things
+    # Cluster specific settings
     if args.cluster:
 
         # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
@@ -123,12 +136,19 @@ if __name__ == "__main__":
 
     # num_workers test
     if args.num_workers_test:
-        num_workers = utils.num_workers_test(ds.dataset, ds.train_params.batch_size)
-    else:
-        num_workers = 4
+        cpus_per_run = (
+            multiprocessing.cpu_count()
+            if args.optimise is None
+            else multiprocessing.cpu_count() / torch.cuda.device_count()
+        )
+        args.num_workers = utils.num_workers_test(
+            ds.dataset, ds.train_params.batch_size, ds.train_params.epochs, cpus_per_run
+        )
 
     # Hyperparams
-    if args.optimise is not None:
+    if args.optimise is None:
+        hyperparams = ds.train_params
+    else:
         hyperparams = {
             "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
             "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
@@ -138,8 +158,6 @@ if __name__ == "__main__":
             "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
             "freeze_until": hp.randint("freeze_until", 11),
         }
-    else:
-        hyperparams = ds.train_params
 
     # Run id
     run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
