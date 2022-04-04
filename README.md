@@ -15,7 +15,7 @@ Run the [`setup.sh`](requirements/local/setup.sh) script to create a virtual env
 the required python packages installed:
 
 ```console
-./requirements/local/setup.sh
+./scripts/local/setup.sh
 ```
 
 Then, activate that environment:
@@ -46,8 +46,8 @@ python data/process.py
 
 ## Usage
 
-Run the [`experiments.sh`](experiment.sh) script to run the experiments:
+Run the [`experiments.sh`](scripts/local/run_experiments.sh) script to run the experiments:
 
 ```console
-./experiments.sh
+./scripts/local/run_experiments.sh
 ```

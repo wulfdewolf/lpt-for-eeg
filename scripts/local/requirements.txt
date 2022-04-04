@@ -1,0 +1,11 @@
+pyyaml-include
+parse
+moabb
+hyperopt
+transformers
+tensorboardx
+ray[tune]
+wandb
+numply
+torch
+torchvision

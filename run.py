@@ -314,7 +314,10 @@ if __name__ == "__main__":
         # Optimisation
         result = tune.run(
             run_fn,
-            resources_per_trial={"cpu": multiprocessing.cpu_count() / torch.cuda.device_count(), "gpu": 1},
+            resources_per_trial={
+                "cpu": multiprocessing.cpu_count() / torch.cuda.device_count(),
+                "gpu": 1,
+            },
             num_samples=args.optimise,
             search_alg=hyperopt_search,
             checkpoint_freq=0,
@@ -340,4 +343,3 @@ if __name__ == "__main__":
 
         # Run
         run_fn(hyperparams)
-
