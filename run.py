@@ -69,11 +69,6 @@ if __name__ == "__main__":
         "--num-workers", default=4, type=int, help="Number of dataloader workers."
     )
     parser.add_argument(
-        "--num-workers-test",
-        action="store_true",
-        help="Whether or not to run the num_workers test snippet, overwrites the value of --num-workers.",
-    )
-    parser.add_argument(
         "--pretrained-encoder",
         action="store_true",
         help="Whether or not to use a pretrained encoder.",
@@ -133,17 +128,6 @@ if __name__ == "__main__":
 
     # Dataset
     ds_name, ds = list(experiment.datasets.items())[0]
-
-    # num_workers test
-    if args.num_workers_test:
-        cpus_per_run = (
-            multiprocessing.cpu_count()
-            if args.optimise is None
-            else multiprocessing.cpu_count() / torch.cuda.device_count()
-        )
-        args.num_workers = utils.num_workers_test(
-            ds.dataset, ds.train_params.batch_size, ds.train_params.epochs, cpus_per_run
-        )
 
     # Hyperparams
     if args.optimise is None:
@@ -266,7 +250,7 @@ if __name__ == "__main__":
                     tr_accuracy = []
                     tr_loss = []
 
-            # Fit everything
+            # Train and fit validation set
             process.fit(
                 training_dataset=training,
                 validation_dataset=validation,
@@ -289,7 +273,7 @@ if __name__ == "__main__":
                 epochs=hyperparams["epochs"],
             )
 
-            # Test scores
+            # Fit test set
             metrics = process.evaluate(test)
             test_loss.append(metrics["loss"])
             test_acc.append(metrics["Accuracy"])
@@ -318,13 +302,18 @@ if __name__ == "__main__":
                 accuracy=sum(test_acc) / len(test_acc),
             )
 
-    # Optimisation or simple run
     if args.optimise is None:
+        """
+        Single run using given hyperparameters
+        """
 
         # Simple run
         run_fn(hyperparams)
 
     else:
+        """
+        Optimisation, raytune is used to spawn <args.optimise> trials with various hyperparameter values
+        """
 
         # Tune algorithm (Tree-structured Parzen Estimator)
         hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")

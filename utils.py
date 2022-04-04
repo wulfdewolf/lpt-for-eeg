@@ -4,14 +4,11 @@ import yaml
 from dn3.metrics.base import balanced_accuracy, auroc
 from dn3.transforms.instance import To1020
 
-CUSTOM_LOADERS = []
+# All of the underneath code was taken from the original BENDR code:
+# https://github.com/SPOClab-ca/BENDR/blob/main/utils.py
 
 EXTRA_METRICS = dict(bac=balanced_accuracy, auroc=auroc)
-
 MODEL_CHOICES = ["LINEARBENDR", "FPTBENDR"]
-
-# All of this code was taken from the original BENDR code:
-# https://github.com/SPOClab-ca/BENDR/blob/main/utils.py
 
 
 def get_ds_added_metrics(ds_name, metrics_config):
@@ -39,8 +36,6 @@ def get_ds_added_metrics(ds_name, metrics_config):
 
 
 def get_ds(name, ds):
-    if name in CUSTOM_LOADERS:
-        ds.add_custom_raw_loader(CUSTOM_LOADERS[name]())
     dataset = ds.auto_construct_dataset()
     dataset.add_transform(To1020())
     return dataset
@@ -55,34 +50,6 @@ def get_lmoso_iterator(name, ds):
         else dataset.loso(test_person_id=specific_test)
     )
     return iterator
-
-
-def num_workers_test(ds, batch_size, epochs, cpus):
-    import time
-
-    pin_memory = False
-    print("pin_memory is", pin_memory)
-    best = 0
-    best_time = float("inf")
-
-    for num_workers in range(0, cpus, 1):
-        train_loader = torch.utils.data.DataLoader(
-            ds,
-            batch_size=batch_size,
-            num_workers=num_workers,
-            pin_memory=pin_memory,
-        )
-        start = time.time()
-        for epoch in range(1, epochs):
-            for i, data in enumerate(train_loader):
-                pass
-        end = time.time()
-        if end - start < best_time:
-            best = num_workers
-            best_time = end - start
-        print("Finish with:{} second, num_workers={}".format(end - start, num_workers))
-
-    return best
 
 
 # See - https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741
