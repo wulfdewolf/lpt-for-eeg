@@ -15,3 +15,4 @@ pip3 install --user .
 # Cleanup
 cd ..
 rm -rf dn3
+module purge

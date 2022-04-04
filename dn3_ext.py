@@ -1,5 +1,4 @@
 import tqdm
-import torch
 
 from torch import nn
 
@@ -106,7 +105,7 @@ class LinearHeadBENDR(Classifier):
 class FPTBENDR(Classifier):
     @property
     def num_features_for_classification(self):
-        return 768
+        return self.encoder_h
 
     def features_forward(self, *x):
 
@@ -120,7 +119,10 @@ class FPTBENDR(Classifier):
         )
         x = transformer_outputs.last_hidden_state
 
-        return x[:, -1:]
+        # Pass through output NN
+        x = self.out_net(x.permute([1, 2, 0]))
+
+        return x[:, :, -1]
 
     def __init__(
         self,
@@ -130,7 +132,6 @@ class FPTBENDR(Classifier):
         encoder_h=512,
         feat_do=0.0,
         enc_do=0.0,
-        orth_gain=1.41,
         multi_gpu=False,
         projection_head=False,
         pretrained=False,
@@ -160,17 +161,17 @@ class FPTBENDR(Classifier):
         tqdm.tqdm.write(self.encoder.description(sequence_len=samples))
         in_layers.append(self.encoder)
 
-        # Permutation layer
-        in_layers.append(Permute([0, 2, 1]))
-
-        # Connection layer
-        connection_linear = nn.Linear(encoder_h, 768)  # -> gpt2 embedding size
-        if orth_gain is not None:
-            torch.nn.init.orthogonal_(connection_linear.weight, gain=orth_gain)
-        connection_linear.bias.data.zero_()
-
-        in_layers.append(connection_linear)
-        in_layers.append(nn.Dropout(feat_do))
+        # Permutation
+        in_layers.append(
+            nn.Sequential(
+                Permute([0, 2, 1]),
+                nn.LayerNorm(encoder_h),
+                nn.Dropout(feat_do),
+                Permute([0, 2, 1]),
+                nn.Conv1d(encoder_h, 768, 1),
+                Permute([2, 0, 1]),
+            )
+        )
 
         self.in_net = nn.Sequential(*in_layers)
         self.in_net = nn.DataParallel(self.in_net) if multi_gpu else self.in_net
@@ -212,6 +213,11 @@ class FPTBENDR(Classifier):
             nn.DataParallel(self.transformer) if multi_gpu else self.transformer
         )
 
+        """
+         OUTPUT NN
+        """
+        self.out_net = nn.Conv1d(768, encoder_h, 1)
+
     def load_encoder(self, encoder_file, freeze=False, strict=True):
         self.encoder.load(encoder_file, strict=strict)
         self.encoder.freeze_features(unfreeze=not freeze)
@@ -233,3 +239,4 @@ class FPTBENDR(Classifier):
 # This classifier is based on the original BENDR code (BENDRClassification):
 # https://github.com/SPOClab-ca/BENDR/blob/main/dn3_ext.py
 # It uses BERT as contextualizer
+

@@ -1,6 +1,7 @@
-transformers
-parse
 pyyaml-include
-openpyxl
-ray[tune]
+parse
+moabb
 hyperopt
+transformers
+tensorboardx
+ray[tune]

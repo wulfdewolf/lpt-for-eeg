@@ -15,6 +15,6 @@ bci_iv_2a:
     batch_size: 60
     lr: 0.00005
     weight_decay: 0.05
-    orth_gain: 1.41
     enc_do: 0.0
     feat_do: 0.0
+    freeze_until: 6

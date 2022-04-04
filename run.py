@@ -10,6 +10,7 @@ import wandb
 import mne
 import os
 import numpy as np
+import multiprocessing
 
 mne.set_log_level(False)
 
@@ -21,8 +22,6 @@ from dn3.trainable.processes import StandardClassification
 from dn3_ext import LinearHeadBENDR, FPTBENDR
 
 from ray import tune
-from ray.tune import CLIReporter
-from ray.tune.schedulers import ASHAScheduler
 from hyperopt import hp
 from ray.tune.suggest.hyperopt import HyperOptSearch
 
@@ -138,11 +137,10 @@ if __name__ == "__main__":
         hyperparams = {
             "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
             "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
-            "batch_size": hp.choice("batch_size", [8, 16, 32, 64, 80, 100, 128]),
-            "epochs": hp.choice("epochs", [4, 8, 16, 32]),
+            "batch_size": hp.choice("batch_size", [16, 32, 64, 128]),
+            "epochs": hp.choice("epochs", [8, 16, 32, 64]),
             "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
             "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
-            "orth_gain": hp.loguniform("orth_gain", np.log(0.001), np.log(2.0)),
             "freeze_until": hp.randint("freeze_until", 11),
         }
     else:
@@ -152,7 +150,7 @@ if __name__ == "__main__":
     run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     # Run function
-    def run_fn(hyperparams):
+    def run_fn(hyperparams, checkpoint_dir=None):
 
         # Run type
         run_type = (
@@ -195,7 +193,6 @@ if __name__ == "__main__":
                     freeze_ff=args.freeze_ff,
                     enc_do=hyperparams["enc_do"],
                     feat_do=hyperparams["feat_do"],
-                    orth_gain=hyperparams["orth_gain"],
                 )
 
             if args.pretrained_encoder:
@@ -263,6 +260,7 @@ if __name__ == "__main__":
                 warmup_frac=0.1,
                 retain_best=retain_best,
                 pin_memory=False,
+                num_workers=args.num_workers,
                 log_callback=partial(
                     log_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
                 )
@@ -310,30 +308,19 @@ if __name__ == "__main__":
     # Optimisation or simple run
     if args.optimise is not None:
 
-        # Tune scheduler
-        scheduler = ASHAScheduler(
-            metric="loss",
-            mode="min",
-            max_t=10,
-            grace_period=1,
-            reduction_factor=2,
-        )
-
-        # Tune reporter
-        reporter = CLIReporter(metric_columns=["loss", "accuracy"])
-
         # Tune algorithm
-        hyperopt_search = HyperOptSearch(hyperparams, metric="loss", mode="min")
+        hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
 
         # Optimisation
         result = tune.run(
             run_fn,
-            resources_per_trial={"cpu": 2, "gpu": 1},
+            resources_per_trial={"cpu": multiprocessing.cpu_count() / torch.cuda.device_count(), "gpu": 1},
             num_samples=args.optimise,
-            scheduler=scheduler,
-            progress_reporter=reporter,
             search_alg=hyperopt_search,
-            local_dir="optimisation",
+            checkpoint_freq=0,
+            local_dir="/data/brussel/102/vsc10248/optimisation"
+            if args.cluster
+            else "optimisation",
         )
 
         # Terminal logging
@@ -353,3 +340,4 @@ if __name__ == "__main__":
 
         # Run
         run_fn(hyperparams)
+
