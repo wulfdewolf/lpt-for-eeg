@@ -57,6 +57,27 @@ def get_lmoso_iterator(name, ds):
     return iterator
 
 
+def num_workers_test(ds, batch_size):
+    import time
+
+    pin_memory = True
+    print("pin_memory is", pin_memory)
+
+    for num_workers in range(0, 20, 1):
+        train_loader = torch.utils.data.DataLoader(
+            ds,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            pin_memory=pin_memory,
+        )
+        start = time.time()
+        for epoch in range(1, 5):
+            for i, data in enumerate(train_loader):
+                pass
+        end = time.time()
+        print("Finish with:{} second, num_workers={}".format(end - start, num_workers))
+
+
 # See - https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741
 def pretty_size(size):
     """Pretty prints a torch.Size object"""

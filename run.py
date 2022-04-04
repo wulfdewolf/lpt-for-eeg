@@ -40,11 +40,6 @@ if __name__ == "__main__":
         help="Where the listings for config " "metrics are stored.",
     )
     parser.add_argument(
-        "--subject-specific",
-        action="store_true",
-        help="Fine-tune on target subject alone.",
-    )
-    parser.add_argument(
         "--wandb",
         action="store_true",
         help="Log training to WandB.",
@@ -64,12 +59,6 @@ if __name__ == "__main__":
         "--name",
         default="thesis",
         help="Name of experiment.",
-    )
-    parser.add_argument(
-        "--multi-gpu", action="store_true", help="Distribute over multiple GPUs"
-    )
-    parser.add_argument(
-        "--num-workers", default=4, type=int, help="Number of dataloader workers."
     )
     parser.add_argument(
         "--pretrained-encoder",
@@ -131,6 +120,12 @@ if __name__ == "__main__":
 
     # Dataset
     ds_name, ds = list(experiment.datasets.items())[0]
+
+    # num_workers test
+    if args.num_workers_test:
+        num_workers = utils.num_workers_test(ds.dataset, ds.train_params.batch_size)
+    else:
+        num_workers = 4
 
     # Hyperparams
     if args.optimise is not None:
@@ -259,7 +254,7 @@ if __name__ == "__main__":
                 validation_dataset=validation,
                 warmup_frac=0.1,
                 retain_best=retain_best,
-                pin_memory=False,
+                pin_memory=True,
                 num_workers=args.num_workers,
                 log_callback=partial(
                     log_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
@@ -306,9 +301,14 @@ if __name__ == "__main__":
             )
 
     # Optimisation or simple run
-    if args.optimise is not None:
+    if args.optimise is None:
 
-        # Tune algorithm
+        # Simple run
+        run_fn(hyperparams)
+
+    else:
+
+        # Tune algorithm (Tree-structured Parzen Estimator)
         hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
 
         # Optimisation
@@ -338,8 +338,3 @@ if __name__ == "__main__":
                     best_trial.last_result["accuracy"]
                 )
             )
-
-    else:
-
-        # Run
-        run_fn(hyperparams)
