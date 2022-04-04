@@ -1,6 +1,0 @@
-[submodule "doc/thesis"]
-	path = doc/thesis
-	url = git@github.com:wulfdewolf/thesis.git
-[submodule "src/BENDR"]
-	path = src/BENDR
-	url = git@github.com:SPOClab-ca/BENDR.git
