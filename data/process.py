@@ -37,18 +37,18 @@ ch_names = [
 ch_types = ["eeg"] * 22 + ["eog"] * 3 + ["stim"]
 
 # Create processed folder
-os.mkdir("data/competition/processed")
+os.mkdir("data/motor_imagery/processed")
 
 # Per type
 for type, folder in zip(
-    ["T", "E"], ["data/competition/raw/training", "data/competition/raw/evaluation"]
+    ["T", "E"], ["data/motor_imagery/raw/training", "data/motor_imagery/raw/evaluation"]
 ):
     # Per subject
     for subject_id, subject_file in enumerate(os.listdir(folder)):
 
         # Create subject folder
-        if not os.path.exists("data/competition/processed/" + str(subject_id)):
-            os.mkdir("data/competition/processed/" + str(subject_id))
+        if not os.path.exists("data/motor_imagery/processed/" + str(subject_id)):
+            os.mkdir("data/motor_imagery/processed/" + str(subject_id))
 
         # Load raw file
         data = loadmat(
@@ -95,7 +95,7 @@ for type, folder in zip(
 
             # Save
             raw.save(
-                "data/competition/processed/"
+                "data/motor_imagery/processed/"
                 + str(subject_id)
                 + "/"
                 + str(run_id)

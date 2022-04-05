@@ -1,7 +1,7 @@
 mmidb:
-bci_iv_2a:
-  name: "BCI Competition IV 2a"
-  toplevel: data/competition/processed
+graz_A:
+  name: "Graz dataset A"
+  toplevel: data/motor_imagery/processed
   tmin: -2
   tlen: 6
   data_max: 100

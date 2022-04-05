@@ -6,7 +6,7 @@ if not os.path.exists("data/plots"):
     os.mkdir("data/plots")
 
 # Read raw
-raw = mne.io.read_raw_fif("data/competition/processed/0/0T-raw.fif", preload=True)
+raw = mne.io.read_raw_fif("data/motor_imagery/processed/0/0T-raw.fif", preload=True)
 
 # Get events
 events = mne.find_events(raw)

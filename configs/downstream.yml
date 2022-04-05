@@ -1,6 +1,6 @@
 Configuratron:
   use_only:
-    - bci_iv_2a
+    - graz_A
   preload: True
   sfreq: 256
   deep1010:

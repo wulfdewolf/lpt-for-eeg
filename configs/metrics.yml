@@ -1,4 +1,4 @@
 # List the (additional, Accuracy is always included) metrics used by the downstream datasets and their chance values
 
-bci_iv_2a:
+graz_A:
   - Accuracy: 0.25
