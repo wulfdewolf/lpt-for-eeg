@@ -2,7 +2,7 @@
 
 This repository contains the source code for my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
-Our contact information:
+Contact information:
 | Name | Email address | Linkedin | GitHub |
 | :--- | :--- | :--- | :--- |
 | Wolf De Wulf | [wolf.de.wulf@vub.be](mailto:wolf.de.wulf@vub.be) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |

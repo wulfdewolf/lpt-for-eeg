@@ -1,4 +1,3 @@
-from dn3_ext import FPTBENDR
 import torch
 import tqdm
 import argparse
@@ -24,6 +23,7 @@ from dn3_ext import LinearHeadBENDR, FPTBENDR
 from ray import tune
 from hyperopt import hp
 from ray.tune.suggest.hyperopt import HyperOptSearch
+from ray.tune import CLIReporter
 
 
 if __name__ == "__main__":
@@ -312,11 +312,16 @@ if __name__ == "__main__":
 
     else:
         """
-        Optimisation, raytune is used to spawn <args.optimise> trials with various hyperparameter values
+        Optimisation, raytune is used to spawn #args.optimise trials with various hyperparameter values
         """
 
         # Tune algorithm (Tree-structured Parzen Estimator)
         hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
+
+        # Tune reporter
+        reporter = CLIReporter(
+            metric_columns=["loss", "accuracy", "training_iteration"]
+        )
 
         # Optimisation
         result = tune.run(
@@ -327,6 +332,7 @@ if __name__ == "__main__":
             },
             num_samples=args.optimise,
             search_alg=hyperopt_search,
+            progress_reporter=reporter,
             checkpoint_freq=0,
             local_dir="/data/brussel/102/vsc10248/optimisation"
             if args.cluster

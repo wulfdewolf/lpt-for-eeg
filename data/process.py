@@ -81,7 +81,6 @@ for type, folder in zip(
             events = np.column_stack(
                 (run.trial, np.zeros(len(run.y), dtype=int), run.y)
             )
-            print(event_ids)
 
             # Annotations
             annotations = mne.annotations_from_events(
@@ -92,7 +91,6 @@ for type, folder in zip(
             info = mne.create_info(ch_names=ch_names, ch_types=ch_types, sfreq=sfreq)
             raw = mne.io.RawArray(data=eeg_data.T, info=info)
             raw.set_montage(montage)
-            # raw.set_annotations(annotations)
             raw.add_events(events, stim_channel="stim")
 
             # Save
