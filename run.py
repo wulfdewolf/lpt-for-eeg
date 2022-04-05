@@ -40,11 +40,6 @@ if __name__ == "__main__":
         help="Where the listings for config " "metrics are stored.",
     )
     parser.add_argument(
-        "--subject-specific",
-        action="store_true",
-        help="Fine-tune on target subject alone.",
-    )
-    parser.add_argument(
         "--wandb",
         action="store_true",
         help="Log training to WandB.",
@@ -128,6 +123,9 @@ if __name__ == "__main__":
 
     # Dataset
     ds_name, ds = list(experiment.datasets.items())[0]
+    ds.toplevel = (
+        cwd / ds.toplevel
+    )  # explicitly add cwd before such that raytune processes know where to look
 
     # Hyperparams
     if args.optimise is None:
@@ -180,7 +178,6 @@ if __name__ == "__main__":
             else:
                 model = FPTBENDR.from_dataset(
                     training,
-                    multi_gpu=args.multi_gpu,
                     pretrained=args.pretrained_transformer,
                     freeze_trans_layers=args.freeze_transformer_layers,
                     freeze_trans_layers_until=hyperparams["freeze_until"],
@@ -226,29 +223,22 @@ if __name__ == "__main__":
                 )
                 wandb.watch(model)
 
-                tr_accuracy = []
-                tr_loss = []
+                tr_accuracy = 0
+                tr_loss = 0
 
-                def log_callback(train_metrics, tr_accuracy=[], tr_loss=[]):
-                    tr_accuracy.append(train_metrics["Accuracy"])
-                    tr_loss.append(train_metrics["loss"])
+                def step_callback(train_metrics, tr_accuracy=None, tr_loss=None):
+                    tr_accuracy = train_metrics["Accuracy"]
+                    tr_loss = train_metrics["loss"]
 
-                def epoch_callback(validation_metrics, tr_accuracy=[], tr_loss=[]):
+                def epoch_callback(validation_metrics, tr_accuracy=None, tr_loss=None):
                     wandb.log(
                         {
-                            "Average Train Accuracy": sum(tr_accuracy)
-                            / len(tr_accuracy),
-                            "Average Train loss": sum(tr_loss) / len(tr_loss),
-                            "Start Train Accuracy": tr_accuracy[0],
-                            "Final Train Loss": tr_loss[-1],
-                            "Average Validation Accuracy": validation_metrics[
-                                "Accuracy"
-                            ],
-                            "Average Validation Loss": validation_metrics["loss"],
+                            "Train Accuracy": tr_accuracy,
+                            "Train Loss": tr_loss,
+                            "Validation Accuracy": validation_metrics["Accuracy"],
+                            "Validation Loss": validation_metrics["loss"],
                         }
                     )
-                    tr_accuracy = []
-                    tr_loss = []
 
             # Train and fit validation set
             process.fit(
@@ -258,8 +248,8 @@ if __name__ == "__main__":
                 retain_best=retain_best,
                 pin_memory=True,
                 num_workers=args.num_workers,
-                log_callback=partial(
-                    log_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
+                step_callback=partial(
+                    step_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
                 )
                 if args.wandb
                 else lambda x: None,
@@ -268,7 +258,6 @@ if __name__ == "__main__":
                 )
                 if args.wandb
                 else lambda x: None,
-                train_log_interval=1,
                 batch_size=hyperparams["batch_size"],
                 epochs=hyperparams["epochs"],
             )

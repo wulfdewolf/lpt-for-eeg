@@ -132,7 +132,6 @@ class FPTBENDR(Classifier):
         encoder_h=512,
         feat_do=0.0,
         enc_do=0.0,
-        multi_gpu=False,
         projection_head=False,
         pretrained=False,
         freeze_trans_layers=[],
@@ -174,7 +173,6 @@ class FPTBENDR(Classifier):
         )
 
         self.in_net = nn.Sequential(*in_layers)
-        self.in_net = nn.DataParallel(self.in_net) if multi_gpu else self.in_net
 
         """
          TRANSFORMER
@@ -209,9 +207,6 @@ class FPTBENDR(Classifier):
                 p.requires_grad = False
 
         self.transformer = transformer
-        self.transformer = (
-            nn.DataParallel(self.transformer) if multi_gpu else self.transformer
-        )
 
         """
          OUTPUT NN
@@ -239,4 +234,3 @@ class FPTBENDR(Classifier):
 # This classifier is based on the original BENDR code (BENDRClassification):
 # https://github.com/SPOClab-ca/BENDR/blob/main/dn3_ext.py
 # It uses BERT as contextualizer
-
