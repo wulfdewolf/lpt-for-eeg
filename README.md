@@ -1,6 +1,6 @@
 # Pretrained transformers as EEG decoders
 
-This repository contains the source code for my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
+This repository contains the source code accompanying my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
 Contact information:
 | Name | Email address | Linkedin | GitHub |
@@ -52,5 +52,5 @@ Run the [`run_experiments.sh`](scripts/local/run_experiments.sh) script to run t
 ./scripts/local/run_experiments.sh
 ```
 
-**Warning:** The experiments consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of large models. Running the experiments on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running the experiments can take a long time and a lot of memory.
+**Warning:** The experiments consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of large deep learning models. Running the experiments on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running the experiments can take a long time and a lot of memory.
 During research all experiments were ran on the [VUB Hydra cluster](https://hpc.vub.be/) using the [`run_experiments.slurm`](scripts/cluster/run_experiments.slurm) slurm script.
