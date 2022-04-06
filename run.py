@@ -1,5 +1,4 @@
 import torch
-import tqdm
 import argparse
 import time
 import utils
@@ -12,6 +11,9 @@ import numpy as np
 import multiprocessing
 
 mne.set_log_level(False)
+
+from functools import partialmethod
+from tqdm import tqdm
 
 from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
@@ -57,9 +59,6 @@ if __name__ == "__main__":
         "--name",
         default="thesis",
         help="Name of experiment.",
-    )
-    parser.add_argument(
-        "--num-workers", default=4, type=int, help="Number of dataloader workers."
     )
     parser.add_argument(
         "--pretrained-encoder",
@@ -111,6 +110,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     experiment = ExperimentConfig(args.ds_config)
     cwd = os.getcwd()
+    n_gpus = torch.cuda.device_count()
+    n_cpus = multiprocessing.cpu_count()
 
     # Cluster specific settings
     if args.cluster:
@@ -125,29 +126,15 @@ if __name__ == "__main__":
         cwd / ds.toplevel
     )  # explicitly add cwd before such that raytune processes know where to look
 
-    # Hyperparams
-    if args.optimise is None:
-        hyperparams = ds.train_params
-    else:
-        hyperparams = {
-            "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
-            "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
-            "batch_size": hp.choice("batch_size", [16, 32, 64, 128]),
-            "epochs": hp.choice("epochs", [8, 16, 32, 64]),
-            "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
-            "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
-            "freeze_until": hp.randint("freeze_until", 11),
-        }
-
     # Run id
     run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     # Run function
     def run_fn(hyperparams, checkpoint_dir=None):
-        print("CPUS: ", flash=True)
-        print(multiprocessing.cpu_count())
-        print("GPUS: ", flash=True)
-        print(torch.cuda.device_count())
+
+        # Disable printing to terminal when optimising as Ray Actors can not get a lock on stdout
+        if args.optimise is not None:
+            tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
 
         # Run type
         run_type = (
@@ -167,9 +154,8 @@ if __name__ == "__main__":
 
         # Cross validation
         for fold, (training, validation, test) in enumerate(
-            tqdm.tqdm(utils.get_lmoso_iterator(ds_name, ds))
+            tqdm(utils.get_lmoso_iterator(ds_name, ds))
         ):
-            tqdm.tqdm.write(torch.cuda.memory_summary())
 
             if args.model == utils.MODEL_CHOICES[0]:
                 model = LinearHeadBENDR.from_dataset(
@@ -247,8 +233,6 @@ if __name__ == "__main__":
                 validation_dataset=validation,
                 warmup_frac=0.1,
                 retain_best=retain_best,
-                pin_memory=args.cluster,
-                num_workers=args.num_workers,
                 step_callback=step_callback if args.wandb else lambda x: None,
                 epoch_callback=epoch_callback if args.wandb else lambda x: None,
                 batch_size=hyperparams["batch_size"],
@@ -289,6 +273,9 @@ if __name__ == "__main__":
         Single run using given hyperparameters
         """
 
+        # Hyperparameters
+        hyperparams = ds.train_params
+
         # Simple run
         run_fn(hyperparams)
 
@@ -297,20 +284,36 @@ if __name__ == "__main__":
         Optimisation, raytune is used to spawn #args.optimise trials with various hyperparameter values
         """
 
+        # Turn off tqdm logging as raytune actors can not get a lock on stdout
+
+        # Hyperparameters
+        hyperparams = {
+            "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
+            "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
+            "batch_size": hp.choice("batch_size", [16, 32, 64, 128]),
+            "epochs": hp.choice("epochs", [8, 16, 32, 64]),
+            "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
+            "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
+            "freeze_until": hp.randint("freeze_until", 11),
+        }
+
         # Tune algorithm (Tree-structured Parzen Estimator)
         hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
 
         # Tune reporter
         reporter = CLIReporter(
-            metric_columns=["loss", "accuracy", "training_iteration"]
+            metric_columns=["loss", "accuracy", "training_iteration"],
+            max_report_frequency=20,
         )
 
         # Optimisation
         result = tune.run(
             run_fn,
             resources_per_trial={
-                "cpu": multiprocessing.cpu_count() / torch.cuda.device_count(),
-                "gpu": 1,
+                "cpu": multiprocessing.cpu_count() / torch.cuda.device_count()
+                if n_gpus > 0
+                else 1,
+                "gpu": 1 if n_gpus > 0 else 0,
             },
             num_samples=args.optimise,
             search_alg=hyperopt_search,

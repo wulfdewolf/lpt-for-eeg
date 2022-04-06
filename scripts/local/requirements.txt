@@ -6,6 +6,6 @@ transformers
 tensorboardx
 ray[tune]
 wandb
-numply
+numpy
 torch
 torchvision

@@ -46,8 +46,11 @@ python data/process.py
 
 ## Usage
 
-Run the [`experiments.sh`](scripts/local/run_experiments.sh) script to run the experiments:
+Run the [`run_experiments.sh`](scripts/local/run_experiments.sh) script to run the experiments:
 
 ```console
 ./scripts/local/run_experiments.sh
 ```
+
+**Warning:** The experiments consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of large models. Running the experiments on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running the experiments can take a long time and a lot of memory.
+During research they were ran on the VUB Hydra cluster using the [`run_experiments.slurm`](scripts/cluster/run_experiments.slurm) slurm script.
