@@ -211,7 +211,7 @@ if __name__ == "__main__":
                 )
                 wandb.watch(model)
 
-                def step_callback(train_metrics):
+                def log_callback(train_metrics):
                     wandb.log(
                         {
                             "Train Accuracy": train_metrics["Accuracy"],
@@ -233,7 +233,7 @@ if __name__ == "__main__":
                 validation_dataset=validation,
                 warmup_frac=0.1,
                 retain_best=retain_best,
-                step_callback=step_callback if args.wandb else lambda x: None,
+                log_callback=log_callback if args.wandb else lambda x: None,
                 epoch_callback=epoch_callback if args.wandb else lambda x: None,
                 batch_size=hyperparams["batch_size"],
                 epochs=hyperparams["epochs"],
