@@ -13,8 +13,6 @@ import multiprocessing
 
 mne.set_log_level(False)
 
-from functools import partial
-
 from dn3.configuratron import ExperimentConfig
 from dn3.trainable.processes import StandardClassification
 
@@ -146,6 +144,10 @@ if __name__ == "__main__":
 
     # Run function
     def run_fn(hyperparams, checkpoint_dir=None):
+        print("CPUS: ", flash=True)
+        print(multiprocessing.cpu_count())
+        print("GPUS: ", flash=True)
+        print(torch.cuda.device_count())
 
         # Run type
         run_type = (
@@ -223,18 +225,17 @@ if __name__ == "__main__":
                 )
                 wandb.watch(model)
 
-                tr_accuracy = 0
-                tr_loss = 0
-
-                def step_callback(train_metrics, tr_accuracy=None, tr_loss=None):
-                    tr_accuracy = train_metrics["Accuracy"]
-                    tr_loss = train_metrics["loss"]
-
-                def epoch_callback(validation_metrics, tr_accuracy=None, tr_loss=None):
+                def step_callback(train_metrics):
                     wandb.log(
                         {
-                            "Train Accuracy": tr_accuracy,
-                            "Train Loss": tr_loss,
+                            "Train Accuracy": train_metrics["Accuracy"],
+                            "Train Loss": train_metrics["loss"],
+                        }
+                    )
+
+                def epoch_callback(validation_metrics):
+                    wandb.log(
+                        {
                             "Validation Accuracy": validation_metrics["Accuracy"],
                             "Validation Loss": validation_metrics["loss"],
                         }
@@ -246,18 +247,10 @@ if __name__ == "__main__":
                 validation_dataset=validation,
                 warmup_frac=0.1,
                 retain_best=retain_best,
-                pin_memory=True,
+                pin_memory=args.cluster,
                 num_workers=args.num_workers,
-                step_callback=partial(
-                    step_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
-                )
-                if args.wandb
-                else lambda x: None,
-                epoch_callback=partial(
-                    epoch_callback, tr_accuracy=tr_accuracy, tr_loss=tr_loss
-                )
-                if args.wandb
-                else lambda x: None,
+                step_callback=step_callback if args.wandb else lambda x: None,
+                epoch_callback=epoch_callback if args.wandb else lambda x: None,
                 batch_size=hyperparams["batch_size"],
                 epochs=hyperparams["epochs"],
             )
