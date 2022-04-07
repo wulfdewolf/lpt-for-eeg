@@ -1,4 +1,4 @@
-# Fine-tuning a pretrained language model to electroencephalography classification
+# Fine-tuning a language-pretrained transformer to the classification of electroencephalography
 
 This repository contains the source code accompanying my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
