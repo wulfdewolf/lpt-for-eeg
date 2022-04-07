@@ -1,4 +1,4 @@
-# Pretrained transformers as EEG decoders
+# Fine-tuning a pretrained language model to electroencephalography classification
 
 This repository contains the source code accompanying my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
