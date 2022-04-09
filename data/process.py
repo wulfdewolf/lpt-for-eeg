@@ -37,27 +37,29 @@ ch_names = [
 ch_types = ["eeg"] * 22 + ["eog"] * 3 + ["stim"]
 
 # Create processed folder
-os.mkdir("data/motor_imagery/processed")
+if os.path.isdir("data/processed"):
+    print("Processed data exists already, clear first!")
+    quit()
+else:
+    os.mkdir("data/processed")
 
-# Per type
-for type, folder in zip(
-    ["T", "E"], ["data/motor_imagery/raw/training", "data/motor_imagery/raw/evaluation"]
-):
-    # Per subject
-    for subject_id, subject_file in enumerate(os.listdir(folder)):
+# Per subject
+for subject_id, subject_file in enumerate(sorted(os.listdir("data/raw"))):
 
-        # Create subject folder
-        if not os.path.exists("data/motor_imagery/processed/" + str(subject_id)):
-            os.mkdir("data/motor_imagery/processed/" + str(subject_id))
+    # Collect Epochs per subject
+    subject_epochs = []
+
+    # Per data type (training & evaluation)
+    for run_file in os.listdir("data/raw/subject" + str(subject_id + 1)):
 
         # Load raw file
         data = loadmat(
-            folder + "/" + str(subject_file),
+            "data/raw/subject" + str(subject_id + 1) + "/" + str(run_file),
             struct_as_record=False,
             squeeze_me=True,
         )
 
-        # Per session
+        # Collect Epochs per session
         for run_id, run in enumerate(data["data"][3:]):
 
             """Convert one run to raw."""
@@ -87,18 +89,23 @@ for type, folder in zip(
                 events, event_desc=event_ids, sfreq=sfreq
             )
 
-            # Create MNE structures
+            # Create MNE raw structure
             info = mne.create_info(ch_names=ch_names, ch_types=ch_types, sfreq=sfreq)
             raw = mne.io.RawArray(data=eeg_data.T, info=info)
             raw.set_montage(montage)
             raw.add_events(events, stim_channel="stim")
 
-            # Save
-            raw.save(
-                "data/motor_imagery/processed/"
-                + str(subject_id)
-                + "/"
-                + str(run_id)
-                + type
-                + "-raw.fif"
-            )
+            # Notch filter at outlet freq
+            raw.notch_filter(50)
+            raw.notch_filter(100)
+
+            # ICA using EoG
+
+            # Window
+            epochs = mne.Epochs(raw, events, tmin=-2, tmax=4)
+            subject_epochs.append(epochs)
+
+    # Save subject's Epochs as one large Epochs
+    mne.concatenate_epochs(subject_epochs).save(
+        "data/processed/subject" + str(subject_id + 1) + "-epo.fif"
+    )

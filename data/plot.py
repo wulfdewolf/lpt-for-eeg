@@ -5,46 +5,27 @@ import os
 if not os.path.exists("data/plots"):
     os.mkdir("data/plots")
 
-# Read raw
-raw = mne.io.read_raw_fif("data/motor_imagery/processed/0/0T-raw.fif", preload=True)
+# Read Epochs
+epochs = mne.read_epochs("data/processed/subject1-epo.fif", preload=True)
+event_dict = {"left_hand": 1, "right_hand": 2, "feet": 3, "tongue": 4}
+events = epochs.events
 
-# Get events
-events = mne.find_events(raw)
-raw.add_events(events)
+# Plot Epochs for single channel
+epochs_plot = epochs.plot_image(picks=["Fz"])[0]
+epochs_plot.savefig("data/plots/windows.pdf")
 
-# Get annotations
-annotations = mne.annotations_from_events(
-    events,
-    sfreq=250,
-    event_desc={1: "left hand", 2: "right hand", 3: "feet", 4: "tongue"},
+# Plot PSD
+psd_plot = epochs.plot_psd()
+psd_plot.savefig("data/plots/psd.pdf")
+
+# Plot downsampled
+downsampled_plot = epochs.resample(100).plot(
+    n_epochs=5, events=events, event_id=event_dict, show_scrollbars=False
 )
-raw.set_annotations(annotations)
-
-# Plot raw
-plot = raw.plot(duration=10, n_channels=22, show_scrollbars=False)
-plot.savefig("data/plots/raw.pdf")
-
-# Plot psd
-plot = raw.plot_psd()
-plot.savefig("data/plots/psd.pdf")
-
-# Downsample
-downsampled = raw.copy()
-downsampled = downsampled.resample(100)
-
-# Plot resampled
-plot = downsampled.plot(duration=10, n_channels=22, show_scrollbars=False)
-plot.savefig("data/plots/resampled.pdf")
-
-# Bandpass filter
-filtered = raw.copy()
-filtered = filtered.filter(l_freq=4, h_freq=38)
+downsampled_plot.savefig("data/plots/downsampled.pdf")
 
 # Plot filtered
-plot = filtered.plot(duration=10, n_channels=22, show_scrollbars=False)
-plot.savefig("data/plots/filtered.pdf")
-
-# Epochs
-epochs = mne.Epochs(raw, events, tmin=-2, tmax=4)
-plot = epochs.plot_image(picks=["Fz"])[0]
-plot.savefig("data/plots/windows.pdf")
+filtered_plot = epochs.filter(l_freq=4, h_freq=38).plot(
+    n_epochs=5, events=events, event_id=event_dict, show_scrollbars=False
+)
+filtered_plot.savefig("data/plots/filtered.pdf")
