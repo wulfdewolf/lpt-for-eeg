@@ -95,14 +95,24 @@ for subject_id, subject_file in enumerate(sorted(os.listdir("data/raw"))):
             raw.set_montage(montage)
             raw.add_events(events, stim_channel="stim")
 
-            # Notch filter at outlet freq
+            # Frequency filter
+            raw.filter(l_freq=1, h_freq=80)
             raw.notch_filter(50)
-            raw.notch_filter(100)
+
+            # Downsample to 160Hz
+            raw.resample(160)
 
             # ICA using EoG
+            ica = mne.preprocessing.ICA(
+                n_components=20, method="fastica", random_state=23
+            )
+            ica.fit(raw, reject=dict(mag=5e-12, grad=4000e-13))
+            eog_indices, eog_scores = ica.find_bads_eog(raw)
+            ica.exclude = eog_indices
+            ica.apply(raw)
 
             # Window
-            epochs = mne.Epochs(raw, events, tmin=-2, tmax=4)
+            epochs = mne.Epochs(raw, events, tmin=-2, tmax=4, preload=True)
             subject_epochs.append(epochs)
 
     # Save subject's Epochs as one large Epochs
