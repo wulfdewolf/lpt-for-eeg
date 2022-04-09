@@ -28,10 +28,6 @@ class LinearHeadBENDR(Classifier):
         enc_do=0.1,
         feat_do=0.4,
         pool_length=4,
-        mask_p_t=0.01,
-        mask_p_c=0.005,
-        mask_t_span=0.05,
-        mask_c_span=0.1,
         classifier_layers=1,
     ):
         if classifier_layers < 1:
@@ -47,22 +43,6 @@ class LinearHeadBENDR(Classifier):
             encoder_h=encoder_h,
             projection_head=projection_head,
             dropout=enc_do,
-        )
-        encoded_samples = self.encoder.downsampling_factor(samples)
-
-        mask_t_span = (
-            mask_t_span if mask_t_span > 1 else int(mask_t_span * encoded_samples)
-        )
-        # Important for short things like P300
-        mask_t_span = 0 if encoded_samples < 2 else mask_t_span
-        mask_c_span = mask_c_span if mask_c_span > 1 else int(mask_c_span * encoder_h)
-
-        self.enc_augment = EncodingAugment(
-            encoder_h,
-            mask_p_t,
-            mask_p_c,
-            mask_c_span=mask_c_span,
-            mask_t_span=mask_t_span,
         )
         tqdm.tqdm.write(
             self.encoder.description(None, samples) + " | {} pooled".format(pool_length)
@@ -132,7 +112,6 @@ class FPTBENDR(Classifier):
         encoder_h=512,
         feat_do=0.0,
         enc_do=0.0,
-        projection_head=False,
         pretrained=False,
         freeze_trans_layers=[],
         freeze_trans_layers_until=None,
@@ -155,7 +134,6 @@ class FPTBENDR(Classifier):
             channels,
             encoder_h=encoder_h,
             dropout=enc_do,
-            projection_head=projection_head,
         )
         tqdm.tqdm.write(self.encoder.description(sequence_len=samples))
         in_layers.append(self.encoder)
