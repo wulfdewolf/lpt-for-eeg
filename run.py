@@ -1,48 +1,30 @@
 import torch
 import argparse
 import time
-import utils
 import random
 import string
 import wandb
 import mne
 import os
-import numpy as np
+import numpy
+import ray
+import hyperopt
 import multiprocessing
+import tqdm
+import functools
+import copy
+
+import dataset
+import models
 
 mne.set_log_level(False)
 
-from functools import partialmethod
-from tqdm import tqdm
-
-from dn3.configuratron import ExperimentConfig
-from dn3.trainable.processes import StandardClassification
-
-from dn3_ext import LinearHeadBENDR, FPTBENDR
-
-from ray import tune
-from hyperopt import hp
-from ray.tune.suggest.hyperopt import HyperOptSearch
-from ray.tune import CLIReporter
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fine-tunes BENDR and FPT models.")
-    parser.add_argument("model", choices=utils.MODEL_CHOICES)
-    parser.add_argument(
-        "--ds-config",
-        default="configs/downstream.yml",
-        help="The DN3 config file to use.",
-    )
-    parser.add_argument(
-        "--metrics-config",
-        default="configs/metrics.yml",
-        help="Where the listings for config " "metrics are stored.",
-    )
+    parser = argparse.ArgumentParser(description="Fine-tunes GPT2 on EEG data.")
     parser.add_argument(
         "--wandb",
         action="store_true",
-        help="Log training to WandB.",
+        help="Log to WandB.",
     )
     parser.add_argument(
         "--cluster",
@@ -76,12 +58,6 @@ if __name__ == "__main__":
         help="Whether or not to use a pretrained transformer (only for when FPTBENDR chosen).",
     )
     parser.add_argument(
-        "--freeze-transformer-layers",
-        nargs="*",
-        default=[],
-        help="The transformer layers to freeze, in the case of GPT2: 0-11 (only for when FPTBENDR chosen).",
-    )
-    parser.add_argument(
         "--freeze-transformer-layers-until",
         default=None,
         type=int,
@@ -108,7 +84,6 @@ if __name__ == "__main__":
         help="Whether or not to freeze the feed-forward networks of the transformer during fine-tuning (only for when FPTBENDR chosen).",
     )
     args = parser.parse_args()
-    experiment = ExperimentConfig(args.ds_config)
     cwd = os.getcwd()
     n_gpus = torch.cuda.device_count()
     n_cpus = multiprocessing.cpu_count()
@@ -121,10 +96,10 @@ if __name__ == "__main__":
         torch.set_num_interop_threads(1)
 
     # Dataset
-    ds_name, ds = list(experiment.datasets.items())[0]
-    ds.toplevel = (
-        cwd / ds.toplevel
-    )  # explicitly add cwd before such that raytune processes know where to look
+    # TODO: add argument to get other processed data
+    subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
+        "data/processed"
+    )
 
     # Run id
     run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -134,7 +109,17 @@ if __name__ == "__main__":
 
         # Disable printing to terminal when optimising as Ray Actors can not get a lock on stdout
         if args.optimise is not None:
-            tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+            tqdm.tqdm.__init__ = functools.partialmethod(
+                tqdm.tqdm.__init__, disable=True
+            )
+
+        # Device
+        if torch.cuda.is_available():
+            tqdm.tqdm.write("GPU(s) detected: running on GPU.")
+            device = torch.device("cuda")
+        else:
+            tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
+            device = torch.device("cpu")
 
         # Run type
         run_type = (
@@ -143,129 +128,244 @@ if __name__ == "__main__":
             else "CV"
         )
 
-        # Test scores
-        test_loss = []
-        test_acc = []
+        # Subject-wise cross validation
+        test_loss_avg, test_acc_avg = 0.0, 0.0
+        for validation_subject_idx in range(n_subjects):
 
-        # Optional additional metrics
-        added_metrics, retain_best, _ = utils.get_ds_added_metrics(
-            ds_name, cwd + "/" + args.metrics_config
-        )
+            """
+            DATA
+            """
 
-        # Cross validation
-        for fold, (training, validation, test) in enumerate(
-            tqdm(utils.get_lmoso_iterator(ds_name, ds))
-        ):
-
-            if args.model == utils.MODEL_CHOICES[0]:
-                model = LinearHeadBENDR.from_dataset(
-                    training,
-                    enc_do=hyperparams["enc_do"],
-                    feat_do=hyperparams["feat_do"],
-                )
-            else:
-                model = FPTBENDR.from_dataset(
-                    training,
-                    pretrained=args.pretrained_transformer,
-                    freeze_trans_layers=args.freeze_transformer_layers,
-                    freeze_trans_layers_until=hyperparams["freeze_until"],
-                    freeze_pos=args.freeze_pos,
-                    freeze_ln=args.freeze_ln,
-                    freeze_attn=args.freeze_attn,
-                    freeze_ff=args.freeze_ff,
-                    enc_do=hyperparams["enc_do"],
-                    feat_do=hyperparams["feat_do"],
-                )
-
-            if args.pretrained_encoder:
-                model.load_pretrained_modules(
-                    cwd + "/" + experiment.encoder_weights,
-                    cwd + "/" + experiment.context_weights,
-                    freeze_encoder=args.freeze_encoder,
-                )
-            process = StandardClassification(model, metrics=added_metrics)
-            process.set_optimizer(
-                torch.optim.Adam(
-                    process.parameters(),
-                    hyperparams["lr"],
-                    weight_decay=hyperparams["weight_decay"],
-                )
+            # Validation subject
+            validation_subject = subjects[validation_subject_idx]
+            validation_sampler = torch.utils.data.RandomSampler(validation_subject)
+            validation_loader = torch.utils.data.DataLoader(
+                validation_subject,
+                batch_size=hyperparams["batch_size"],
+                num_workers=4,  # TODO: get good number
+                sampler=validation_sampler,
+                # TODO: preload
+                # TODO: pin_memory
             )
 
-            # WandB
+            # Test subject
+            test_subject_idx = (
+                validation_subject_idx + 1
+            ) % n_subjects  # Always next one, first is test for last
+            test_subject = subjects[test_subject_idx]
+            test_sampler = torch.utils.data.RandomSampler(test_subject)
+            test_loader = torch.utils.data.DataLoader(
+                test_subject,
+                batch_size=hyperparams["batch_size"],
+                num_workers=4,  # TODO: get good number
+                sampler=test_sampler,
+                # TODO: preload
+                # TODO: pin_memory
+            )
+
+            # Train subjects
+            train_subjects = torch.utils.data.dataset.ConcatDataset(
+                [
+                    subject
+                    for subject in subjects
+                    if subject != validation_subject and subject != test_subject
+                ]
+            )
+            train_sampler = torch.utils.data.RandomSampler(train_subjects)
+            train_loader = torch.utils.data.DataLoader(
+                train_subjects,
+                batch_size=hyperparams["batch_size"],
+                num_workers=4,  # TODO: get good number
+                sampler=train_sampler,
+                # TODO: preload
+                # TODO: pin_memory
+            )
+
+            """
+            MODEL
+            """
+
+            model = models.FreezableGPT2(
+                n_channels,
+                n_classes,
+                hyperparams["dropout"],
+                orth_gain=hyperparams["orth_gain"],
+                pretrained=args.pretrained_transformer,
+                freeze_trans_layers_until=hyperparams["freeze_until"],
+                freeze_pos=args.freeze_pos,
+                freeze_ln=args.freeze_ln,
+                freeze_attn=args.freeze_attn,
+                freeze_ff=args.freeze_ff,
+            )
+
+            """
+            LOGGING
+            """
+
             if args.wandb:
-                group_name = f"{args.name}-{args.model}-{run_id}"
+                group_name = f"{args.name}-{run_id}"
                 config = dict(
                     **vars(args),
-                    **vars(experiment),
                     hyperparams=hyperparams,
                     run_type=run_type,
                 )
                 run = wandb.init(
-                    name="subject " + str(fold + 1),
+                    name="test-subject-" + str(test_subject_idx + 1),
                     group=group_name,
                     project="fpt-for-eeg",
                     config=config,
                     job_type=run_type,
                     reinit=True,
                 )
-                wandb.watch(model)
+                # TODO: see what this actually does
+                # wandb.watch(model)
 
-                def log_callback(train_metrics):
+            """
+            TRAINING
+            """
+
+            # Loss
+            ce_loss = torch.nn.CrossEntropyLoss()
+
+            def loss_fn(out, y):
+                out = out[:, 0]
+                return ce_loss(out, y)
+
+            # Accuracy
+            def acc_fn(preds, true):
+                preds = preds[:, 0].argmax(-1)
+                return (preds == true).mean()
+
+            # Optimiser
+            optimiser = torch.optim.Adam(model.parameters(), lr=hyperparams["lr"])
+
+            # Epochs
+            validation_acc_best = 0.0
+            best_model = model
+            for _ in tqdm.tqdm(
+                range(hyperparams["epochs"]), desc="Epochs", unit="epochs"
+            ):
+
+                # Train
+                model.train()
+                train_loss, train_acc = 0.0, 0.0
+                for batch_x, batch_y in tqdm.tqdm(
+                    train_loader, desc="Training", unit="batches"
+                ):
+                    batch_x = batch_x.to(device=device, dtype=torch.float32)
+                    batch_y = batch_y.to(device=device, dtype=torch.long)
+
+                    # Pass through model
+                    output = model(batch_x)
+
+                    # Loss
+                    loss = loss_fn(output, batch_y)
+                    loss.backward()
+                    train_loss = loss.detach().cpu().item()
+
+                    # Accuracy
+                    train_acc = acc_fn(
+                        output.detach().cpu().numpy(),
+                        batch_y.detach().cpu().numpy(),
+                    )
+
+                    # Learn
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    optimiser.step()
+                    optimiser.zero_grad()
+
+                # Validate
+                model.eval()
+                validation_loss, validation_acc = 0.0, 0.0
+                with torch.no_grad():
+                    for batch_x, batch_y in tqdm.tqdm(
+                        validation_loader, desc="Validation", unit="batches"
+                    ):
+                        batch_x = batch_x.to(device=device)
+                        batch_y = batch_y.to(device=device)
+
+                        # Pass through model
+                        output = model(batch_x)
+
+                        # Loss
+                        validation_loss += loss_fn(
+                            output, batch_y
+                        ).detach().cpu().item() / len(validation_loader)
+
+                        # Accuracy
+                        validation_acc += acc_fn(
+                            output.detach().cpu().numpy(),
+                            batch_y.detach().cpu().numpy(),
+                        ) / len(validation_loader)
+
+                # Retain best
+                if validation_acc > validation_acc_best:
+                    best_model = copy.deepcopy(model)
+                    validation_acc_best = validation_acc
+
+                # Log epoch
+                if args.wandb:
                     wandb.log(
                         {
-                            "Train Accuracy": train_metrics["Accuracy"],
-                            "Train Loss": train_metrics["loss"],
+                            "Train Loss": train_loss,
+                            "Train Accuracy": train_acc,
+                            "Validation Loss": validation_loss,
+                            "Validation Accuracy": validation_acc,
                         }
                     )
 
-                def epoch_callback(validation_metrics):
-                    wandb.log(
-                        {
-                            "Validation Accuracy": validation_metrics["Accuracy"],
-                            "Validation Loss": validation_metrics["loss"],
-                        }
+            """
+            EVALUATION
+            """
+            best_model.eval()
+            test_loss, test_acc = 0.0, 0.0
+            with torch.no_grad():
+                for batch_x, batch_y in tqdm.tqdm(
+                    test_loader, desc="Evaluation", unit="batches"
+                ):
+                    batch_x = batch_x.to(device=device, dtype=torch.float32)
+                    batch_y = batch_y.to(device=device, dtype=torch.float64)
+
+                    # Pass through model
+                    output = best_model(batch_x)
+
+                    # Loss
+                    test_loss += loss_fn(output, batch_y).detach().cpu().item() / len(
+                        test_loader
                     )
 
-            # Train and fit validation set
-            process.fit(
-                training_dataset=training,
-                validation_dataset=validation,
-                warmup_frac=0.1,
-                retain_best=retain_best,
-                log_callback=log_callback if args.wandb else lambda x: None,
-                epoch_callback=epoch_callback if args.wandb else lambda x: None,
-                batch_size=hyperparams["batch_size"],
-                epochs=hyperparams["epochs"],
-            )
+                    # Accuracy
+                    test_acc += acc_fn(
+                        output.detach().cpu().numpy(),
+                        batch_y.detach().cpu().numpy(),
+                    ) / len(test_loader)
 
-            # Fit test set
-            metrics = process.evaluate(test)
-            test_loss.append(metrics["loss"])
-            test_acc.append(metrics["Accuracy"])
+            # Test subject avg
+            test_loss_avg += test_loss / n_subjects
+            test_acc_avg += test_acc / n_subjects
 
-            # Log test scores to WandB
+            # Log evaluation
             if args.wandb:
                 wandb.log(
                     {
-                        "Test Accuracy": metrics["Accuracy"],
-                        "Test Loss": metrics["loss"],
+                        "Test Accuracy": test_acc,
+                        "Test Loss": test_loss,
                     }
                 )
 
-            # Explicitly garbage collect here, don't want to fit two models in GPU at once
-            del process
+            # Cleanup
             del model
+            del best_model
             torch.cuda.synchronize()
-            time.sleep(10)
+            time.sleep(5)
             if args.wandb:
                 run.finish()
 
-        # Log test scores to tune
+        # Log test subject avgs to raytune
         if args.optimise is not None:
-            tune.report(
-                loss=sum(test_loss) / len(test_loss),
-                accuracy=sum(test_acc) / len(test_acc),
+            ray.tune.report(
+                loss=test_loss_avg,
+                accuracy=test_acc_avg,
             )
 
     if args.optimise is None:
@@ -273,8 +373,15 @@ if __name__ == "__main__":
         Single run using given hyperparameters
         """
 
-        # Hyperparameters
-        hyperparams = ds.train_params
+        # Hyperparams
+        hyperparams = {
+            "lr": 0.00005,
+            "batch_size": 32,
+            "epochs": 4,
+            "dropout": 0.1,
+            "freeze_until": None,
+            "orth_gain": 1.41,
+        }
 
         # Simple run
         run_fn(hyperparams)
@@ -283,31 +390,39 @@ if __name__ == "__main__":
         """
         Optimisation, raytune is used to spawn #args.optimise trials with various hyperparameter values
         """
-
-        # Turn off tqdm logging as raytune actors can not get a lock on stdout
+        tqdm.tqdm(
+            "Running optimisation through raytune, ignoring passed hyperparameters."
+        )
 
         # Hyperparameters
         hyperparams = {
-            "lr": hp.loguniform("lr", np.log(5e-5), np.log(1e-1)),
-            "weight_decay": hp.loguniform("weight_decay", np.log(0.001), np.log(1.0)),
-            "batch_size": hp.choice("batch_size", [16, 32, 64, 128]),
-            "epochs": hp.choice("epochs", [8, 16, 32, 64]),
-            "enc_do": hp.loguniform("enc_do", np.log(0.001), np.log(1.0)),
-            "feat_do": hp.loguniform("feat_do", np.log(0.001), np.log(1.0)),
-            "freeze_until": hp.randint("freeze_until", 11),
+            "lr": hyperopt.hyperopt.hp.loguniform(
+                "lr", numpy.log(5e-5), numpy.log(1e-1)
+            ),
+            "weight_decay": hyperopt.hp.loguniform(
+                "weight_decay", numpy.log(0.001), numpy.log(1.0)
+            ),
+            "batch_size": hyperopt.hp.choice("batch_size", [16, 32, 64, 128]),
+            "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
+            "dropout": hyperopt.hp.loguniform(
+                "dropout", numpy.log(0.001), numpy.log(1.0)
+            ),
+            "freeze_until": hyperopt.hp.randint("freeze_until", 11),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)
-        hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
+        hyperopt_search = ray.tune.suggest.HyperOptSearch(
+            hyperparams, metric="accuracy", mode="max"
+        )
 
         # Tune reporter
-        reporter = CLIReporter(
+        reporter = ray.tune.CLIReporter(
             metric_columns=["loss", "accuracy", "training_iteration"],
             max_report_frequency=20,
         )
 
         # Optimisation
-        result = tune.run(
+        result = ray.tune.run(
             run_fn,
             resources_per_trial={
                 "cpu": multiprocessing.cpu_count() / torch.cuda.device_count()
@@ -325,7 +440,7 @@ if __name__ == "__main__":
         )
 
         # Terminal logging
-        best_trial = result.get_best_trial("loss", "min", "last")
+        best_trial = result.get_best_trial("acc", "max", "last")
         if result is not None and best_trial is not None:
             print("Best trial config: {}".format(best_trial.config))
             print(

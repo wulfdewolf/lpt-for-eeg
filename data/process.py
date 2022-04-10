@@ -112,7 +112,7 @@ for subject_id, subject_file in enumerate(sorted(os.listdir("data/raw"))):
             ica.apply(raw)
 
             # Window
-            epochs = mne.Epochs(raw, events, tmin=-2, tmax=4, preload=True)
+            epochs = mne.Epochs(raw, events, picks="eeg", tmin=-2, tmax=4)
             subject_epochs.append(epochs)
 
     # Save subject's Epochs as one large Epochs

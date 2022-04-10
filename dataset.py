@@ -1,8 +1,11 @@
 import torch
+import os
+import mne
+import numpy
 
 # Class taken from mne-torch tools:
 # https://github.com/mne-tools/mne-torch/blob/master/common.py
-class EpochsDataset(torch.Dataset):
+class EpochsDataset(torch.utils.data.Dataset):
     """Class to expose an MNE Epochs object as PyTorch dataset
     Parameters
     ----------
@@ -28,14 +31,36 @@ class EpochsDataset(torch.Dataset):
         X, y = self.epochs_data[idx], self.epochs_labels[idx]
         if self.transform is not None:
             X = self.transform(X)
-        X = torch.as_tensor(X[None, ...])
+        X = torch.as_tensor(X)
         return X, y
 
 
 def dataset_per_subject(directory):
     """Function to read .fif files per subject as EpochsDataset
     ----------
-    directory : path to directory that contains the .fif files per subject
+    directory : path to directory that contains the -epo.fif files per subject
     ----------
-    returns : list of EpochsDataset, one per subject
+    returns : list of EpochsDataset, number of subjects, number of channels, number of classes
     """
+
+    epochs_list = [
+        mne.read_epochs(directory + "/" + file) for file in os.listdir(directory)
+    ]
+
+    n_subjects = len(epochs_list)
+    n_channels = epochs_list[0].get_data().shape[1]
+    n_classes = len(epochs_list[0].event_id.keys())
+
+    return (
+        [
+            EpochsDataset(
+                # Go from (channels x samples) to (samples x channels)
+                numpy.swapaxes(epochs.get_data(), 1, 2),
+                epochs.events[:, 2] - 1,
+            )
+            for epochs in epochs_list
+        ],
+        n_subjects,
+        n_channels,
+        n_classes,
+    )
