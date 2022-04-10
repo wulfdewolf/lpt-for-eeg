@@ -98,7 +98,9 @@ if __name__ == "__main__":
     # Dataset
     # TODO: add argument to get other processed data
     subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
-        "data/processed"
+        "/data/brussel/102/vsc10248/data/processed"
+        if args.cluster
+        else "data/processed"
     )
 
     # Run id
@@ -261,18 +263,20 @@ if __name__ == "__main__":
                     # Loss
                     loss = loss_fn(output, batch_y)
                     loss.backward()
-                    train_loss = loss.detach().cpu().item()
+                    train_loss += loss.detach().cpu().item() / len(training_loader)
 
                     # Accuracy
-                    train_acc = acc_fn(
+                    train_acc += acc_fn(
                         output.detach().cpu().numpy(),
                         batch_y.detach().cpu().numpy(),
-                    )
+                    ) / len(training_loader)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimiser.step()
                     optimiser.zero_grad()
+                tqdm.tqdm.write("Training accuracy: " + str(train_acc))
+                tqdm.tqdm.write("Training loss    : " + str(train_acc))
 
                 # Validate
                 model.eval()
@@ -297,6 +301,8 @@ if __name__ == "__main__":
                             output.detach().cpu().numpy(),
                             batch_y.detach().cpu().numpy(),
                         ) / len(validation_loader)
+                tqdm.tqdm.write("Validation accuracy: " + str(train_acc))
+                tqdm.tqdm.write("Validation loss    : " + str(train_acc))
 
                 # Retain best
                 if validation_acc > validation_acc_best:
