@@ -146,8 +146,7 @@ if __name__ == "__main__":
                 batch_size=hyperparams["batch_size"],
                 num_workers=4,  # TODO: get good number
                 sampler=validation_sampler,
-                # TODO: preload
-                # TODO: pin_memory
+                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
             )
 
             # Test subject
@@ -161,8 +160,7 @@ if __name__ == "__main__":
                 batch_size=hyperparams["batch_size"],
                 num_workers=4,  # TODO: get good number
                 sampler=test_sampler,
-                # TODO: preload
-                # TODO: pin_memory
+                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
             )
 
             # Train subjects
@@ -179,8 +177,7 @@ if __name__ == "__main__":
                 batch_size=hyperparams["batch_size"],
                 num_workers=4,  # TODO: get good number
                 sampler=train_sampler,
-                # TODO: preload
-                # TODO: pin_memory
+                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
             )
 
             """
@@ -263,13 +260,13 @@ if __name__ == "__main__":
                     # Loss
                     loss = loss_fn(output, batch_y)
                     loss.backward()
-                    train_loss += loss.detach().cpu().item() / len(training_loader)
+                    train_loss += loss.detach().cpu().item() / len(train_loader)
 
                     # Accuracy
                     train_acc += acc_fn(
                         output.detach().cpu().numpy(),
                         batch_y.detach().cpu().numpy(),
-                    ) / len(training_loader)
+                    ) / len(train_loader)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
