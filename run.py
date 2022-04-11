@@ -13,6 +13,7 @@ import multiprocessing
 import tqdm
 import functools
 import copy
+import math
 
 import dataset
 import models
@@ -132,15 +133,6 @@ if __name__ == "__main__":
         device = torch.device("cpu")
     gradient_accumulation = 16
 
-    # Dataset
-    # TODO: add argument to get other processed data
-    subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
-        "/data/brussel/102/vsc10248/data/processed"
-        if args.cluster
-        else "data/processed",
-        device,
-    )
-
     # Run id
     run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
@@ -160,13 +152,19 @@ if __name__ == "__main__":
             else "CV"
         )
 
+        # Datasets
+        # TODO: add argument to get other processed data
+        subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
+            "/data/brussel/102/vsc10248/data/processed"
+            if args.cluster
+            else "data/processed",
+        )
+        for subject in subjects:
+            subject.to(device)  # Read in once
+
         # Subject-wise cross validation
         test_loss_avg, test_acc_avg = 0.0, 0.0
-        for validation_subject_idx in range(n_subjects):
-
-            """
-            DATA
-            """
+        for test_subject_idx in range(n_subjects):
 
             # Must be able to accumulate gradients
             assert (
@@ -185,47 +183,32 @@ if __name__ == "__main__":
                 else 1
             )
 
-            # Validation subject
-            validation_subject = subjects[validation_subject_idx]
-            validation_sampler = torch.utils.data.RandomSampler(validation_subject)
-            validation_loader = torch.utils.data.DataLoader(
-                validation_subject,
-                batch_size=eval_batch_size,
-                num_workers=4,  # TODO: get good number
-                sampler=validation_sampler,
-                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
-            )
+            """
+            DATA
+            """
 
             # Test subject
-            test_subject_idx = (
-                validation_subject_idx + 1
-            ) % n_subjects  # Always next one, first is test for last
             test_subject = subjects[test_subject_idx]
-            test_sampler = torch.utils.data.RandomSampler(test_subject)
-            test_loader = torch.utils.data.DataLoader(
-                test_subject,
-                batch_size=eval_batch_size,
-                num_workers=4,  # TODO: get good number
-                sampler=test_sampler,
-                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
-            )
+            test_sampler = dataset.RandomSampler(len(test_subject))
+            n_test_batches = math.ceil(len(test_subject) / eval_batch_size)
+
+            # Validation subject
+            validation_subject_idx = (
+                test_subject_idx + 1
+            ) % n_subjects  # Always next one, first is validation for last
+            validation_subject = subjects[validation_subject_idx]
+            validation_sampler = dataset.RandomSampler(len(validation_subject))
+            n_validation_batches = math.ceil(len(validation_subject) / eval_batch_size)
 
             # Train subjects
-            train_subjects = torch.utils.data.dataset.ConcatDataset(
-                [
-                    subject
-                    for subject in subjects
-                    if subject != validation_subject and subject != test_subject
-                ]
-            )
-            train_sampler = torch.utils.data.RandomSampler(train_subjects)
-            train_loader = torch.utils.data.DataLoader(
-                train_subjects,
-                batch_size=train_batch_size,
-                num_workers=4,  # TODO: get good number
-                sampler=train_sampler,
-                pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
-            )
+            train_subjects = [
+                subject
+                for subject in subjects
+                if subject != validation_subject and subject != test_subject
+            ]
+            train_samples_total = sum(len(subject) for subject in train_subjects)
+            train_sampler = dataset.RandomSampler(train_samples_total)
+            n_train_batches = math.ceil(train_samples_total / train_batch_size)
 
             """
             MODEL
@@ -237,7 +220,7 @@ if __name__ == "__main__":
                 hyperparams["dropout"],
                 orth_gain=hyperparams["orth_gain"],
                 pretrained=args.pretrained_transformer,
-                freeze_trans_layers_until=hyperparams["freeze_until"],
+                freeze_until=hyperparams["freeze_until"],
                 freeze_pos=args.freeze_pos,
                 freeze_ln=args.freeze_ln,
                 freeze_attn=args.freeze_attn,
@@ -296,14 +279,19 @@ if __name__ == "__main__":
                 # Train
                 model.train()
                 train_loss, train_acc = 0.0, 0.0
-                for batch_x, batch_y in tqdm.tqdm(
-                    train_loader, desc="Training", unit="batches"
+                for _ in tqdm.tqdm(
+                    range(n_train_batches),
+                    desc="Training",
+                    unit="batches",
                 ):
-                    # batch_x = batch_x.to(device=device, dtype=torch.float32)
-                    # batch_y = batch_y.to(device=device, dtype=torch.long)
 
                     # Gradient Accumulation
                     for _ in range(gradient_accumulation_steps):
+
+                        # Get batch
+                        batch_x, batch_y = dataset.get_training_batch(
+                            train_subjects, train_sampler.next(train_batch_size)
+                        )
 
                         # Pass through model
                         output = model(batch_x)
@@ -311,13 +299,13 @@ if __name__ == "__main__":
                         # Loss
                         loss = loss_fn(output, batch_y) / gradient_accumulation_steps
                         loss.backward()
-                        train_loss += loss.detach().cpu().item() / len(train_loader)
+                        train_loss += loss.detach().cpu().item() / n_train_batches
 
                         # Accuracy
                         train_acc += acc_fn(
                             output.detach().cpu().numpy(),
                             batch_y.detach().cpu().numpy(),
-                        ) / (len(train_loader) + gradient_accumulation_steps)
+                        ) / (n_train_batches + gradient_accumulation_steps)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -326,6 +314,9 @@ if __name__ == "__main__":
                         set_to_none=True
                     )  # Setting to None is faster than to 0
 
+                    # Reset sampler
+                    train_sampler.reset()
+
                 tqdm.tqdm.write("Training accuracy: " + str(train_acc))
                 tqdm.tqdm.write("Training loss    : " + str(train_acc))
 
@@ -333,25 +324,30 @@ if __name__ == "__main__":
                 model.eval()
                 validation_loss, validation_acc = 0.0, 0.0
                 with torch.no_grad():
-                    for batch_x, batch_y in tqdm.tqdm(
-                        validation_loader, desc="Validation", unit="batches"
+                    for _ in tqdm.tqdm(
+                        range(n_validation_batches), desc="Validation", unit="batches"
                     ):
-                        # batch_x = batch_x.to(device=device)
-                        # batch_y = batch_y.to(device=device)
+                        batch_x, batch_y = validation_subject.get_batch(
+                            validation_sampler.next(eval_batch_size)
+                        )
 
                         # Pass through model
                         output = model(batch_x)
 
                         # Loss
-                        validation_loss += loss_fn(
-                            output, batch_y
-                        ).detach().cpu().item() / len(validation_loader)
+                        validation_loss += (
+                            loss_fn(output, batch_y).detach().cpu().item()
+                            / n_validation_batches
+                        )
 
                         # Accuracy
-                        validation_acc += acc_fn(
-                            output.detach().cpu().numpy(),
-                            batch_y.detach().cpu().numpy(),
-                        ) / len(validation_loader)
+                        validation_acc += (
+                            acc_fn(
+                                output.detach().cpu().numpy(),
+                                batch_y.detach().cpu().numpy(),
+                            )
+                            / n_validation_batches
+                        )
 
                 tqdm.tqdm.write("Validation accuracy: " + str(train_acc))
                 tqdm.tqdm.write("Validation loss    : " + str(train_acc))
@@ -378,25 +374,29 @@ if __name__ == "__main__":
             best_model.eval()
             test_loss, test_acc = 0.0, 0.0
             with torch.no_grad():
-                for batch_x, batch_y in tqdm.tqdm(
-                    test_loader, desc="Evaluation", unit="batches"
+                for _ in tqdm.tqdm(
+                    range(n_test_batches), desc="Evaluation", unit="batches"
                 ):
-                    # batch_x = batch_x.to(device=device, dtype=torch.float32)
-                    # batch_y = batch_y.to(device=device, dtype=torch.float64)
+                    batch_x, batch_y = test_subject.get_batch(
+                        test_sampler.next(eval_batch_size)
+                    )
 
                     # Pass through model
                     output = best_model(batch_x)
 
                     # Loss
-                    test_loss += loss_fn(output, batch_y).detach().cpu().item() / len(
-                        test_loader
+                    test_loss += (
+                        loss_fn(output, batch_y).detach().cpu().item() / n_test_batches
                     )
 
                     # Accuracy
-                    test_acc += acc_fn(
-                        output.detach().cpu().numpy(),
-                        batch_y.detach().cpu().numpy(),
-                    ) / len(test_loader)
+                    test_acc += (
+                        acc_fn(
+                            output.detach().cpu().numpy(),
+                            batch_y.detach().cpu().numpy(),
+                        )
+                        / n_test_batches
+                    )
 
             # Test subject avg
             test_loss_avg += test_loss / n_subjects

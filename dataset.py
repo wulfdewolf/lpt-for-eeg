@@ -2,9 +2,9 @@ import torch
 import os
 import mne
 import numpy
+import random
 
-# Class taken from mne-torch tools:
-# https://github.com/mne-tools/mne-torch/blob/master/common.py
+
 class EpochsDataset(torch.utils.data.Dataset):
     """Class to expose an MNE Epochs object as PyTorch dataset
     Parameters
@@ -18,25 +18,65 @@ class EpochsDataset(torch.utils.data.Dataset):
         for preprocessing (e.g. scaling). Defaults to None.
     """
 
-    def __init__(self, epochs_data, epochs_labels, device, transform=None):
+    def __init__(self, epochs_data, epochs_labels):
         assert len(epochs_data) == len(epochs_labels)
         self.epochs_data = epochs_data
         self.epochs_labels = epochs_labels
-        self.device = device
-        self.transform = transform
+
+    def to(self, device):
+
+        # Send complete dataset to device
+        self.epochs_data = torch.as_tensor(
+            self.epochs_data, device=device, dtype=torch.float32
+        )
+        self.epochs_labels = torch.as_tensor(
+            self.epochs_labels, device=device, dtype=torch.long
+        )
+
+    def get_batch(self, indices):
+        return self.epochs_data.index_select(
+            0, torch.as_tensor(indices)
+        ), self.epochs_labels.index_select(0, torch.as_tensor(indices))
 
     def __len__(self):
         return len(self.epochs_labels)
 
-    def __getitem__(self, idx):
-        X, y = self.epochs_data[idx], self.epochs_labels[idx]
-        if self.transform is not None:
-            X = self.transform(X)
-        X = torch.as_tensor(X, device=self.device, dtype=torch.float32)
-        return X, y
+
+class RandomSampler:
+    def __init__(self, n):
+        self.n = n
+        self.indices = [i for i in range(n)]
+
+    def next(self, n):
+        if n <= len(self.indices):
+            return random.sample(self.indices, n)
+        else:
+            return self.indices
+
+    def reset(self):
+        self.__init__(self.n)
 
 
-def dataset_per_subject(directory, device):
+def get_training_batch(subjects, indices):
+
+    subject_index_separations = numpy.cumsum([len(subject) - 1 for subject in subjects])
+    Xs = []
+    ys = []
+    for idx in indices:
+        subject_start = 0
+        for subject, subject_end in enumerate(subject_index_separations):
+            if idx <= subject_end:
+                X, y = subjects[subject].get_batch([idx - subject_start])
+                Xs.append(X)
+                ys.append(y)
+                break
+            else:
+                subject_start = subject_end + 1
+
+    return torch.cat(Xs, dim=0), torch.cat(ys, dim=0)
+
+
+def dataset_per_subject(directory):
     """Function to read .fif files per subject as EpochsDataset
     ----------
     directory : path to directory that contains the -epo.fif files per subject
@@ -58,7 +98,6 @@ def dataset_per_subject(directory, device):
                 # Go from (channels x samples) to (samples x channels)
                 numpy.swapaxes(epochs.get_data(), 1, 2),
                 epochs.events[:, 2] - 1,
-                device,
             )
             for epochs in epochs_list
         ],
