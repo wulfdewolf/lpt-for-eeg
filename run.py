@@ -104,6 +104,7 @@ if __name__ == "__main__":
     else:
         tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
         device = torch.device("cpu")
+    gradient_accumulation = 16
 
     # Dataset
     # TODO: add argument to get other processed data
@@ -141,12 +142,29 @@ if __name__ == "__main__":
             DATA
             """
 
+            # Must be able to accumulate gradients
+            assert (
+                hyperparams["batch_size"] <= gradient_accumulation
+                or hyperparams["batch_size"] % gradient_accumulation == 0
+            )
+            eval_batch_size = hyperparams["batch_size"]
+            train_batch_size = (
+                gradient_accumulation
+                if eval_batch_size > gradient_accumulation
+                else eval_batch_size
+            )
+            gradient_accumulation_steps = (
+                eval_batch_size // gradient_accumulation
+                if eval_batch_size > gradient_accumulation
+                else 1
+            )
+
             # Validation subject
             validation_subject = subjects[validation_subject_idx]
             validation_sampler = torch.utils.data.RandomSampler(validation_subject)
             validation_loader = torch.utils.data.DataLoader(
                 validation_subject,
-                batch_size=hyperparams["batch_size"],
+                batch_size=eval_batch_size,
                 num_workers=4,  # TODO: get good number
                 sampler=validation_sampler,
                 pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
@@ -160,7 +178,7 @@ if __name__ == "__main__":
             test_sampler = torch.utils.data.RandomSampler(test_subject)
             test_loader = torch.utils.data.DataLoader(
                 test_subject,
-                batch_size=hyperparams["batch_size"],
+                batch_size=eval_batch_size,
                 num_workers=4,  # TODO: get good number
                 sampler=test_sampler,
                 pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
@@ -177,7 +195,7 @@ if __name__ == "__main__":
             train_sampler = torch.utils.data.RandomSampler(train_subjects)
             train_loader = torch.utils.data.DataLoader(
                 train_subjects,
-                batch_size=hyperparams["batch_size"],
+                batch_size=train_batch_size,
                 num_workers=4,  # TODO: get good number
                 sampler=train_sampler,
                 pin_memory=args.cluster,  # On the cluster there is sufficient CUDA pinned memory
@@ -258,24 +276,30 @@ if __name__ == "__main__":
                     # batch_x = batch_x.to(device=device, dtype=torch.float32)
                     # batch_y = batch_y.to(device=device, dtype=torch.long)
 
-                    # Pass through model
-                    output = model(batch_x)
+                    # Gradient Accumulation
+                    for _ in range(gradient_accumulation_steps):
 
-                    # Loss
-                    loss = loss_fn(output, batch_y)
-                    loss.backward()
-                    train_loss += loss.detach().cpu().item() / len(train_loader)
+                        # Pass through model
+                        output = model(batch_x)
 
-                    # Accuracy
-                    train_acc += acc_fn(
-                        output.detach().cpu().numpy(),
-                        batch_y.detach().cpu().numpy(),
-                    ) / len(train_loader)
+                        # Loss
+                        loss = loss_fn(output, batch_y) / gradient_accumulation_steps
+                        loss.backward()
+                        train_loss += loss.detach().cpu().item() / len(train_loader)
+
+                        # Accuracy
+                        train_acc += acc_fn(
+                            output.detach().cpu().numpy(),
+                            batch_y.detach().cpu().numpy(),
+                        ) / (len(train_loader) + gradient_accumulation_steps)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimiser.step()
-                    optimiser.zero_grad()
+                    optimiser.zero_grad(
+                        set_to_none=True
+                    )  # Setting to None is faster than to 0
+
                 tqdm.tqdm.write("Training accuracy: " + str(train_acc))
                 tqdm.tqdm.write("Training loss    : " + str(train_acc))
 
@@ -302,6 +326,7 @@ if __name__ == "__main__":
                             output.detach().cpu().numpy(),
                             batch_y.detach().cpu().numpy(),
                         ) / len(validation_loader)
+
                 tqdm.tqdm.write("Validation accuracy: " + str(train_acc))
                 tqdm.tqdm.write("Validation loss    : " + str(train_acc))
 
@@ -374,6 +399,10 @@ if __name__ == "__main__":
                 loss=test_loss_avg,
                 accuracy=test_acc_avg,
             )
+
+        # Log test subject avgs to terminal
+        tqdm.tqdm.write("Avg test accuracy: " + str(train_acc))
+        tqdm.tqdm.write("Avg test loss    : " + str(train_acc))
 
     if args.optimise is None:
         """

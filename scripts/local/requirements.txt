@@ -1,8 +1,8 @@
 parse
 hyperopt
 transformers
-tensorboardx
 ray[tune]
 wandb
 numpy
 torch
+mne

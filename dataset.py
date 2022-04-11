@@ -36,7 +36,7 @@ class EpochsDataset(torch.utils.data.Dataset):
         return X, y
 
 
-def dataset_per_subject(directory):
+def dataset_per_subject(directory, device):
     """Function to read .fif files per subject as EpochsDataset
     ----------
     directory : path to directory that contains the -epo.fif files per subject
@@ -58,6 +58,7 @@ def dataset_per_subject(directory):
                 # Go from (channels x samples) to (samples x channels)
                 numpy.swapaxes(epochs.get_data(), 1, 2),
                 epochs.events[:, 2] - 1,
+                device,
             )
             for epochs in epochs_list
         ],
