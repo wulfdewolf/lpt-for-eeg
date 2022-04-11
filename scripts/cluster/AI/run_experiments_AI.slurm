@@ -12,4 +12,4 @@ cd ~/fpt-for-eeg
 source env/bin/activate
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-python run.py --pretrained-transformer --freeze-transformer-layers-until 5 --freeze-pos --freeze-ff
+python run.py --pretrained-transformer

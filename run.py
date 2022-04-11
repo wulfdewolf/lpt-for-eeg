@@ -310,7 +310,7 @@ if __name__ == "__main__":
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimiser.step()
-                    optimiser.zero_grad(
+                    model.zero_grad(
                         set_to_none=True
                     )  # Setting to None is faster than to 0
 
@@ -437,12 +437,12 @@ if __name__ == "__main__":
 
         # Hyperparams
         hyperparams = {
-            "freeze_until": args.freeze_until,
-            "lr": args.learning_rate,
-            "batch_size": args.batch_size,
-            "epochs": args.epochs,
-            "dropout": args.dropout,
-            "orth_gain": args.orth_gain,
+            "freeze_until": args.__dict__.pop("freeze_until"),
+            "lr": args.__dict__.pop("learning_rate"),
+            "batch_size": args.__dict__.pop("batch_size"),
+            "epochs": args.__dict__.pop("epochs"),
+            "dropout": args.__dict__.pop("dropout"),
+            "orth_gain": args.__dict__.pop("orth_gain"),
         }
 
         # Simple run

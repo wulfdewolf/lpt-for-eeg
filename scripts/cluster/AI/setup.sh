@@ -9,7 +9,7 @@ python -m venv env
 source env/bin/activate
 
 # Install reqs
-pip install -r requirements/cluster/AI/requirements.txt
+pip install -r scripts/cluster/AI/requirements.txt
 
 # Cleanup
 module purge
