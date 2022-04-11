@@ -24,6 +24,7 @@ class EpochsDataset(torch.utils.data.Dataset):
         self.epochs_labels = epochs_labels
 
     def to(self, device):
+        self.device = device
 
         # Send complete dataset to device
         self.epochs_data = torch.as_tensor(
@@ -35,8 +36,8 @@ class EpochsDataset(torch.utils.data.Dataset):
 
     def get_batch(self, indices):
         return self.epochs_data.index_select(
-            0, torch.as_tensor(indices)
-        ), self.epochs_labels.index_select(0, torch.as_tensor(indices))
+            0, torch.as_tensor(indices, device=self.device)
+        ), self.epochs_labels.index_select(0, torch.as_tensor(indices, device=self.device))
 
     def __len__(self):
         return len(self.epochs_labels)

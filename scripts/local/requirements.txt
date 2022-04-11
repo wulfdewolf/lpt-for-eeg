@@ -6,3 +6,4 @@ wandb
 numpy
 torch
 mne
+sklearn
