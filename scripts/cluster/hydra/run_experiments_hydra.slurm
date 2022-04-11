@@ -7,7 +7,6 @@
 #SBATCH --partition=ampere_gpu,pascal_gpu
 
 module load PyTorch/1.7.1-fosscuda-2020b
-module load torchvision/0.8.2-fosscuda-2020b-PyTorch-1.7.1
 module load wandb/0.12.5-GCCcore-10.2.0
 
 cd ~/fpt-for-eeg
