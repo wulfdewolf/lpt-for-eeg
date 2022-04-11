@@ -1,6 +1,4 @@
-pyyaml-include
 parse
-moabb
 hyperopt
 transformers
 tensorboardx

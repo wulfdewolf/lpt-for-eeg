@@ -18,10 +18,11 @@ class EpochsDataset(torch.utils.data.Dataset):
         for preprocessing (e.g. scaling). Defaults to None.
     """
 
-    def __init__(self, epochs_data, epochs_labels, transform=None):
+    def __init__(self, epochs_data, epochs_labels, device, transform=None):
         assert len(epochs_data) == len(epochs_labels)
         self.epochs_data = epochs_data
         self.epochs_labels = epochs_labels
+        self.device = device
         self.transform = transform
 
     def __len__(self):
@@ -31,7 +32,7 @@ class EpochsDataset(torch.utils.data.Dataset):
         X, y = self.epochs_data[idx], self.epochs_labels[idx]
         if self.transform is not None:
             X = self.transform(X)
-        X = torch.as_tensor(X)
+        X = torch.as_tensor(X, device=self.device, dtype=torch.float32)
         return X, y
 
 

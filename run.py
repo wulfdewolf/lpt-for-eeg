@@ -85,8 +85,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     cwd = os.getcwd()
-    n_gpus = torch.cuda.device_count()
-    n_cpus = multiprocessing.cpu_count()
 
     # Cluster specific settings
     if args.cluster:
@@ -95,12 +93,25 @@ if __name__ == "__main__":
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
+    # Resources
+    n_gpus = torch.cuda.device_count()
+    tqdm.tqdm.write("Available GPU(S): " + str(n_gpus))
+    n_cpus = multiprocessing.cpu_count()
+    tqdm.tqdm.write("Available CPU(S): " + str(n_cpus))
+    if torch.cuda.is_available():
+        tqdm.tqdm.write("GPU(s) detected: running on GPU.")
+        device = torch.device("cuda")
+    else:
+        tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
+        device = torch.device("cpu")
+
     # Dataset
     # TODO: add argument to get other processed data
     subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
         "/data/brussel/102/vsc10248/data/processed"
         if args.cluster
-        else "data/processed"
+        else "data/processed",
+        device,
     )
 
     # Run id
@@ -114,14 +125,6 @@ if __name__ == "__main__":
             tqdm.tqdm.__init__ = functools.partialmethod(
                 tqdm.tqdm.__init__, disable=True
             )
-
-        # Device
-        if torch.cuda.is_available():
-            tqdm.tqdm.write("GPU(s) detected: running on GPU.")
-            device = torch.device("cuda")
-        else:
-            tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
-            device = torch.device("cpu")
 
         # Run type
         run_type = (
@@ -196,6 +199,7 @@ if __name__ == "__main__":
                 freeze_attn=args.freeze_attn,
                 freeze_ff=args.freeze_ff,
             )
+            model.to(device)
 
             """
             LOGGING
@@ -251,8 +255,8 @@ if __name__ == "__main__":
                 for batch_x, batch_y in tqdm.tqdm(
                     train_loader, desc="Training", unit="batches"
                 ):
-                    batch_x = batch_x.to(device=device, dtype=torch.float32)
-                    batch_y = batch_y.to(device=device, dtype=torch.long)
+                    # batch_x = batch_x.to(device=device, dtype=torch.float32)
+                    # batch_y = batch_y.to(device=device, dtype=torch.long)
 
                     # Pass through model
                     output = model(batch_x)
@@ -282,8 +286,8 @@ if __name__ == "__main__":
                     for batch_x, batch_y in tqdm.tqdm(
                         validation_loader, desc="Validation", unit="batches"
                     ):
-                        batch_x = batch_x.to(device=device)
-                        batch_y = batch_y.to(device=device)
+                        # batch_x = batch_x.to(device=device)
+                        # batch_y = batch_y.to(device=device)
 
                         # Pass through model
                         output = model(batch_x)
@@ -326,8 +330,8 @@ if __name__ == "__main__":
                 for batch_x, batch_y in tqdm.tqdm(
                     test_loader, desc="Evaluation", unit="batches"
                 ):
-                    batch_x = batch_x.to(device=device, dtype=torch.float32)
-                    batch_y = batch_y.to(device=device, dtype=torch.float64)
+                    # batch_x = batch_x.to(device=device, dtype=torch.float32)
+                    # batch_y = batch_y.to(device=device, dtype=torch.float64)
 
                     # Pass through model
                     output = best_model(batch_x)
@@ -379,7 +383,7 @@ if __name__ == "__main__":
         # Hyperparams
         hyperparams = {
             "lr": 0.00005,
-            "batch_size": 32,
+            "batch_size": 2,
             "epochs": 4,
             "dropout": 0.1,
             "freeze_until": None,

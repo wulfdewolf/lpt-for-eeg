@@ -1,6 +1,4 @@
-pyyaml-include
 parse
-moabb
 hyperopt
 transformers
 tensorboardx
@@ -8,4 +6,3 @@ ray[tune]
 wandb
 numpy
 torch
-torchvision

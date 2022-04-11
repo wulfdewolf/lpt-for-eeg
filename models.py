@@ -88,9 +88,7 @@ class FreezableGPT2(torch.nn.Module):
     def forward(self, x):
 
         # Pass through input NN
-        print(x.shape)
         x = self.in_net(x)
-        print(x.shape)
 
         # Pass through transformer
         transformer_outputs = self.transformer(
@@ -100,7 +98,7 @@ class FreezableGPT2(torch.nn.Module):
         x = transformer_outputs.last_hidden_state
 
         # Pass through output NN
-        x = self.out_net(x.permute([1, 2, 0]))
+        x = self.out_net(x)
 
         # Return last output
-        return x[:, :, -1]
+        return x[None, -1, :]
