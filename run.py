@@ -20,7 +20,10 @@ import models
 mne.set_log_level(False)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fine-tunes GPT2 on EEG data.")
+    parser = argparse.ArgumentParser(
+        description="Fine-tunes GPT2 on EEG data.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--wandb",
         action="store_true",
@@ -42,54 +45,77 @@ if __name__ == "__main__":
         default="thesis",
         help="Name of experiment.",
     )
-    parser.add_argument(
-        "--pretrained-encoder",
-        action="store_true",
-        help="Whether or not to use a pretrained encoder.",
-    )
-    parser.add_argument(
-        "--freeze-encoder",
-        action="store_true",
-        help="Whether or not to freeze the encoder during fine-tuning.",
-    )
+    # Pretraining
     parser.add_argument(
         "--pretrained-transformer",
         action="store_true",
-        help="Whether or not to use a pretrained transformer (only for when FPTBENDR chosen).",
+        help="Whether or not to use a pretrained version of GPT2.",
     )
-    parser.add_argument(
-        "--freeze-transformer-layers-until",
-        default=None,
-        type=int,
-        help="The transformer layers to freeze, starting from 0 to the specified number, in the case of GPT2 maximum 11 (only for when FPTBENDR chosen).",
-    )
+    # Freezing
     parser.add_argument(
         "--freeze-pos",
         action="store_true",
-        help="Whether or not to freeze the positional layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+        help="Whether or not to freeze GPT2's positional embedding.",
     )
     parser.add_argument(
         "--freeze-ln",
         action="store_true",
-        help="Whether or not to freeze the layer-norm layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+        help="Whether or not to freeze GPT2's layer-norm layers.",
     )
     parser.add_argument(
         "--freeze-attn",
         action="store_true",
-        help="Whether or not to freeze the attention layers of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+        help="Whether or not to freeze GPT2's attention layers.",
     )
     parser.add_argument(
         "--freeze-ff",
         action="store_true",
-        help="Whether or not to freeze the feed-forward networks of the transformer during fine-tuning (only for when FPTBENDR chosen).",
+        help="Whether or not to freeze GPT2's feed-forward networks.",
+    )
+    # Hyperparameters
+    parser.add_argument(
+        "--freeze-until",
+        default=-1,
+        type=int,
+        help="Hyperparameter: decoder layers to freeze the specified modules for, starting from 0 up until the specified number, maximum 11.",
+    )
+    parser.add_argument(
+        "--learning-rate",
+        default=0.0005,
+        type=float,
+        help="Hyperparameter: learning rate.",
+    )
+    parser.add_argument(
+        "--dropout",
+        default=0.1,
+        type=float,
+        help="Hyperparameter: dropout probability.",
+    )
+    parser.add_argument(
+        "--orth-gain",
+        default=None,
+        type=float,
+        help="Hyperparameter: orthogonal gain of input layer.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        default=1,
+        type=int,
+        help="Hyperparameter: batch size.",
+    )
+    parser.add_argument(
+        "--epochs",
+        default=1,
+        type=int,
+        help="Hyperparameter: number of times to go through training data.",
     )
     args = parser.parse_args()
     cwd = os.getcwd()
 
-    # Cluster specific settings
+    # Cluster specific settings (Hydra)
     if args.cluster:
 
-        # Specific threads when running on HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
+        # Specific threads when running on Hydra HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
         torch.set_num_threads(len(os.sched_getaffinity(0)))
         torch.set_num_interop_threads(1)
 
@@ -411,12 +437,12 @@ if __name__ == "__main__":
 
         # Hyperparams
         hyperparams = {
-            "lr": 0.00005,
-            "batch_size": 2,
-            "epochs": 4,
-            "dropout": 0.1,
-            "freeze_until": None,
-            "orth_gain": 1.41,
+            "freeze_until": args.freeze_until,
+            "lr": args.learning_rate,
+            "batch_size": args.batch_size,
+            "epochs": args.epochs,
+            "dropout": args.dropout,
+            "orth_gain": args.orth_gain,
         }
 
         # Simple run
@@ -426,7 +452,7 @@ if __name__ == "__main__":
         """
         Optimisation, raytune is used to spawn #args.optimise trials with various hyperparameter values
         """
-        tqdm.tqdm(
+        tqdm.tqdm.write(
             "Running optimisation through raytune, ignoring passed hyperparameters."
         )
 
