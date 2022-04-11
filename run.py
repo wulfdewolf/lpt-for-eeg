@@ -314,11 +314,12 @@ if __name__ == "__main__":
                         set_to_none=True
                     )  # Setting to None is faster than to 0
 
-                    # Reset sampler
-                    train_sampler.reset()
+                # Reset sampler
+                train_sampler.reset()
 
+                # Log training scores to terminal
                 tqdm.tqdm.write("Training accuracy: " + str(train_acc))
-                tqdm.tqdm.write("Training loss    : " + str(train_acc))
+                tqdm.tqdm.write("Training loss    : " + str(train_loss))
 
                 # Validate
                 model.eval()
@@ -349,10 +350,15 @@ if __name__ == "__main__":
                             / n_validation_batches
                         )
 
-                tqdm.tqdm.write("Validation accuracy: " + str(train_acc))
-                tqdm.tqdm.write("Validation loss    : " + str(train_acc))
+                # Reset sampler
+                validation_sampler.reset()
+
+                # Log validation scores to terminal
+                tqdm.tqdm.write("Validation loss    : " + str(validation_loss))
+                tqdm.tqdm.write("Validation accuracy: " + str(validation_acc))
 
                 # Retain best
+                # TODO: see if no two models are in memory because of this
                 if validation_acc > validation_acc_best:
                     best_model = copy.deepcopy(model)
                     validation_acc_best = validation_acc
@@ -398,6 +404,10 @@ if __name__ == "__main__":
                         / n_test_batches
                     )
 
+            # Log test scores to terminal
+            tqdm.tqdm.write("Test loss    : " + str(test_loss))
+            tqdm.tqdm.write("Test accuracy: " + str(test_acc))
+
             # Test subject avg
             test_loss_avg += test_loss / n_subjects
             test_acc_avg += test_acc / n_subjects
@@ -427,8 +437,8 @@ if __name__ == "__main__":
             )
 
         # Log test subject avgs to terminal
-        tqdm.tqdm.write("Avg test accuracy: " + str(train_acc))
-        tqdm.tqdm.write("Avg test loss    : " + str(train_acc))
+        tqdm.tqdm.write("Avg test loss    : " + str(test_loss_avg))
+        tqdm.tqdm.write("Avg test accuracy: " + str(test_acc_avg))
 
     if args.optimise is None:
         """

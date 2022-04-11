@@ -37,7 +37,9 @@ class EpochsDataset(torch.utils.data.Dataset):
     def get_batch(self, indices):
         return self.epochs_data.index_select(
             0, torch.as_tensor(indices, device=self.device)
-        ), self.epochs_labels.index_select(0, torch.as_tensor(indices, device=self.device))
+        ), self.epochs_labels.index_select(
+            0, torch.as_tensor(indices, device=self.device)
+        )
 
     def __len__(self):
         return len(self.epochs_labels)
@@ -60,19 +62,22 @@ class RandomSampler:
 
 def get_training_batch(subjects, indices):
 
-    subject_index_separations = numpy.cumsum([len(subject) - 1 for subject in subjects])
+    subject_last_indices = [
+        subject_last_idx - 1
+        for subject_last_idx in numpy.cumsum([len(subject) for subject in subjects])
+    ]
     Xs = []
     ys = []
     for idx in indices:
-        subject_start = 0
-        for subject, subject_end in enumerate(subject_index_separations):
-            if idx <= subject_end:
-                X, y = subjects[subject].get_batch([idx - subject_start])
+        subject_start_idx = 0
+        for subject, subject_last_idx in enumerate(subject_last_indices):
+            if idx <= subject_last_idx:
+                X, y = subjects[subject].get_batch([idx - subject_start_idx])
                 Xs.append(X)
                 ys.append(y)
                 break
             else:
-                subject_start = subject_end + 1
+                subject_start_idx = subject_last_idx + 1
 
     return torch.cat(Xs, dim=0), torch.cat(ys, dim=0)
 

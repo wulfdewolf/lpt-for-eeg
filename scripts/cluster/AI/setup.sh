@@ -1,15 +1,10 @@
 #!/bin/bash
 
-module load Python/3.7.4-GCCcore-8.3.0
-
-# Make venv
-python -m venv env
-
-# Activate venv
-source env/bin/activate
+module load PyTorch/1.4.0-fosscuda-2019b-Python-3.7.4
 
 # Install reqs
-pip install -r scripts/cluster/AI/requirements.txt
+pip install --user -r scripts/cluster/AI/requirements.txt
+pip install --user --ignore-installed six
 
 # Cleanup
 module purge
