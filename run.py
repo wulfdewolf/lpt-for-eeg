@@ -271,7 +271,7 @@ if __name__ == "__main__":
 
             # Epochs
             validation_acc_best = 0.0
-            best_model = model
+            best_model_params = copy.deepcopy(model.state_dict())
             for _ in tqdm.tqdm(
                 range(hyperparams["epochs"]), desc="Epochs", unit="epochs"
             ):
@@ -358,9 +358,8 @@ if __name__ == "__main__":
                 tqdm.tqdm.write("Validation accuracy: " + str(validation_acc))
 
                 # Retain best
-                # TODO: see if no two models are in memory because of this
                 if validation_acc > validation_acc_best:
-                    best_model = copy.deepcopy(model)
+                    best_model_params = copy.deepcopy(model.state_dict())
                     validation_acc_best = validation_acc
 
                 # Log epoch
@@ -377,7 +376,10 @@ if __name__ == "__main__":
             """
             EVALUATION
             """
-            best_model.eval()
+
+            # Load best model params
+            model.load_state_dict(best_model_params)
+            model.eval()
             test_loss, test_acc = 0.0, 0.0
             with torch.no_grad():
                 for _ in tqdm.tqdm(
@@ -388,7 +390,7 @@ if __name__ == "__main__":
                     )
 
                     # Pass through model
-                    output = best_model(batch_x)
+                    output = model(batch_x)
 
                     # Loss
                     test_loss += (
@@ -423,7 +425,6 @@ if __name__ == "__main__":
 
             # Cleanup
             del model
-            del best_model
             torch.cuda.synchronize()
             time.sleep(5)
             if args.wandb:
@@ -440,6 +441,7 @@ if __name__ == "__main__":
         tqdm.tqdm.write("Avg test loss    : " + str(test_loss_avg))
         tqdm.tqdm.write("Avg test accuracy: " + str(test_acc_avg))
 
+    # RUNNING
     if args.optimise is None:
         """
         Single run using given hyperparameters

@@ -111,6 +111,9 @@ for subject_id, subject_file in enumerate(sorted(os.listdir("data/raw"))):
             ica.exclude = eog_indices
             ica.apply(raw)
 
+            # Drop EOG
+            raw.pick(picks="eeg")
+
             # Window
             epochs = mne.Epochs(raw, events, picks="eeg", tmin=-2, tmax=4)
             subject_epochs.append(epochs)
