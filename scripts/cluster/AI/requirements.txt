@@ -4,3 +4,4 @@ transformers
 ray[tune]
 mne
 wandb
+six
