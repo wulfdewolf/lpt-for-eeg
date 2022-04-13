@@ -3,6 +3,7 @@
 **/wandb
 **/*.mat
 **/*.fif
+**/*.npy
 **/*.pt
 **/.vscode
 **/optimisation

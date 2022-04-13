@@ -39,6 +39,16 @@ ch_types = ["eeg"] * 22 + ["eog"] * 3 + ["stim"]
 # Predefined class labels
 event_dict = {"left_hand": 1, "right_hand": 2, "feet": 3, "tongue": 4}
 
+# Frequency boudns
+l_freq = 1
+h_freq = 45
+
+# Frequency to downsample to (Hz)
+final_sfreq = 125
+
+# Window size (s)
+window_size = 6
+
 
 def to_mne_raw(run):
     """Convert one run to raw."""
@@ -72,15 +82,8 @@ def to_mne_raw(run):
 
 def process():
 
-    # Create processed folder
-    if os.path.isdir("data/processed"):
-        print("Processed data exists already, clear first!")
-        quit()
-    else:
-        os.mkdir("data/processed")
-
     # Per subject
-    for subject_id, subject_file in enumerate(sorted(os.listdir("data/raw"))):
+    for subject_id in range(len(os.listdir("data/raw"))):
 
         # Collect Epochs per subject
         subject_epochs = []
@@ -101,20 +104,19 @@ def process():
                 raw = to_mne_raw(run)
 
                 # Frequency filter
-                raw.filter(l_freq=1, h_freq=70)
-                raw.notch_filter(50)
+                raw.filter(l_freq=l_freq, h_freq=h_freq)
 
-                # Downsample to 145Hz (> 2*70Hz)
-                raw.resample(145)
+                # Downsample to 125Hz (> 2*45Hz)
+                raw.resample(final_sfreq)
 
-                # ICA using EoG
-                ica = mne.preprocessing.ICA(
-                    n_components=20, method="fastica", random_state=23
-                )
-                ica.fit(raw, reject=dict(mag=5e-12, grad=4000e-13))
-                eog_indices, eog_scores = ica.find_bads_eog(raw)
-                ica.exclude = eog_indices
-                ica.apply(raw)
+                # ICA using EoG --> we don't do this here because we are investigating mobile BCI's
+                # ica = mne.preprocessing.ICA(
+                #    n_components=20, method="fastica", random_state=23
+                # )
+                # ica.fit(raw, reject=dict(mag=5e-12, grad=4000e-13))
+                # eog_indices, eog_scores = ica.find_bads_eog(raw)
+                # ica.exclude = eog_indices
+                # ica.apply(raw)
 
                 # Drop EOG and get events now that resampling has been done
                 events = mne.find_events(raw)
@@ -133,14 +135,24 @@ def process():
                 subject_epochs.append(epochs)
 
         # Save subject's Epochs as one large Epochs
+        concatenated_epochs = mne.concatenate_epochs(subject_epochs)
         print(
-            "Number of concatted epochs for subject: "
-            + str(len(mne.concatenate_epochs(subject_epochs)))
+            "Number of concatted epochs for subject: " + str(len(concatenated_epochs))
         )
-        mne.concatenate_epochs(subject_epochs).save(
+
+        # Save concatenated epochs
+        concatenated_epochs.save(
             "data/processed/subject" + str(subject_id + 1) + "-epo.fif"
         )
 
 
 if __name__ == "__main__":
+
+    # Create processed folder
+    if os.path.isdir("data/processed"):
+        print("Processed data exists already, clear first!")
+        quit()
+    else:
+        os.mkdir("data/processed")
+
     process()
