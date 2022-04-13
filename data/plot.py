@@ -1,31 +1,68 @@
 import mne
 import os
+from scipy.io import loadmat
+
+import process
+
 
 # Create plots folder
 if not os.path.exists("data/plots"):
     os.mkdir("data/plots")
 
+
+"""
+ RAW
+"""
+
+# Read raw
+data = loadmat(
+    "data/raw/subject1/A01T.mat",
+    struct_as_record=False,
+    squeeze_me=True,
+)
+raw = process.to_mne_raw(data["data"][3:][0])
+raw.add_events(mne.find_events(raw))
+
+# Plot raw
+raw_plot = raw.plot(duration=10, n_channels=22, show_scrollbars=False)
+raw_plot.savefig("data/plots/raw.pdf")
+
+# Plot psd
+psd_plot = raw.plot_psd()
+psd_plot.savefig("data/plots/raw_psd.pdf")
+
+# ICA
+ica = mne.preprocessing.ICA(n_components=10, method="fastica", random_state=23)
+ica.fit(raw, reject=dict(mag=5e-12, grad=4000e-13))
+raw.load_data()
+ica_plot = ica.plot_sources(raw, start=0, stop=10, show_scrollbars=False)
+ica_plot.savefig("data/plots/ica.pdf")
+
+# Downsample
+downsampled = raw.copy()
+downsampled = downsampled.resample(100)
+downsampled_plot = downsampled.plot(duration=10, n_channels=22, show_scrollbars=False)
+downsampled_plot.savefig("data/plots/raw_downsampled.pdf")
+
+# Bandpass filter
+filtered = raw.copy()
+filtered = filtered.filter(l_freq=4, h_freq=38)
+filtered_plot = filtered.plot(duration=10, n_channels=22, show_scrollbars=False)
+filtered_plot.savefig("data/plots/raw_filtered.pdf")
+
+
+""" 
+ EPOCHS
+"""
+
 # Read Epochs
 epochs = mne.read_epochs("data/processed/subject1-epo.fif", preload=True)
-event_dict = {"left_hand": 1, "right_hand": 2, "feet": 3, "tongue": 4}
-events = epochs.events
+epochs_events = epochs.events
 
 # Plot Epochs for single channel
 epochs_plot = epochs.plot_image(picks=["Fz"])[0]
-epochs_plot.savefig("data/plots/windows.pdf")
+epochs_plot.savefig("data/plots/epochs.pdf")
 
 # Plot PSD
 psd_plot = epochs.plot_psd()
-psd_plot.savefig("data/plots/psd.pdf")
-
-# Plot downsampled
-downsampled_plot = epochs.resample(100).plot(
-    n_epochs=5, events=events, event_id=event_dict, show_scrollbars=False
-)
-downsampled_plot.savefig("data/plots/downsampled.pdf")
-
-# Plot filtered
-filtered_plot = epochs.filter(l_freq=4, h_freq=38).plot(
-    n_epochs=5, events=events, event_id=event_dict, show_scrollbars=False
-)
-filtered_plot.savefig("data/plots/filtered.pdf")
+psd_plot.savefig("data/plots/epochs_psd.pdf")

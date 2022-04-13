@@ -127,7 +127,7 @@ if __name__ == "__main__":
     tqdm.tqdm.write("Available CPU(S): " + str(n_cpus))
     if torch.cuda.is_available():
         tqdm.tqdm.write("GPU(s) detected: running on GPU.")
-        device = torch.device("cuda")
+        device = torch.device("cpu")
     else:
         tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
         device = torch.device("cpu")
