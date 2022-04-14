@@ -6,18 +6,6 @@ import random
 
 
 class EpochsDataset(torch.utils.data.Dataset):
-    """Class to expose an MNE Epochs object as PyTorch dataset
-    Parameters
-    ----------
-    epochs_data : 3d array, shape (n_epochs, n_channels, n_times)
-        The epochs data.
-    epochs_labels : array of int, shape (n_epochs,)
-        The epochs labels.
-    transform : callable | None
-        The function to eventually apply to each epoch
-        for preprocessing (e.g. scaling). Defaults to None.
-    """
-
     def __init__(self, epochs_data, epochs_labels):
         assert len(epochs_data) == len(epochs_labels)
         self.epochs_data = epochs_data
@@ -83,12 +71,6 @@ def get_training_batch(subjects, indices):
 
 
 def dataset_per_subject(directory):
-    """Function to read .fif files per subject as EpochsDataset
-    ----------
-    directory : path to directory that contains the -epo.fif files per subject
-    ----------
-    returns : list of EpochsDataset, number of subjects, number of channels, number of classes
-    """
 
     epochs_list = [
         mne.read_epochs(directory + "/" + file) for file in os.listdir(directory)

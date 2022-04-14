@@ -17,6 +17,9 @@ def process(create_labels):
         # Standardize
         epochs_data = mne.decoding.Scaler(scalings="mean").fit_transform(epochs_data)
 
+        # Change dimensions: (epochs, channels, samples) -> (epochs, samples, channels)
+        epochs_data = numpy.swapaxes(epochs_data, 1, 2)
+
         # Save data
         with open(
             "data/processed/subject" + str(subject_id) + "_timepoints.npy", "wb"
