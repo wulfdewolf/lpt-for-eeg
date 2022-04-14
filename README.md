@@ -38,11 +38,23 @@ Run the [`download.sh`](data/download.sh) script to download the data:
 ./data/download.sh
 ```
 
+The raw data is downloaded to `data/raw`.
+
 Run the [`process.py`](data/process.py) script to process the data:
 
 ```console
 python data/process.py
 ```
+
+The processed data is saved in `data/processed`.
+
+Run the [`feature_extract.py`](data/feature_extract.py) script to process the data and extract features from it:
+
+```console
+python data/process.py
+```
+
+The features are saved in `data/feature_extracted`
 
 ### 3. Running
 

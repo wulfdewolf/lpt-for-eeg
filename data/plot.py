@@ -2,7 +2,7 @@ import mne
 import os
 from scipy.io import loadmat
 
-import process
+import util
 
 
 def plot_raw():
@@ -13,7 +13,7 @@ def plot_raw():
         struct_as_record=False,
         squeeze_me=True,
     )
-    raw = process.to_mne_raw(data["data"][3:][0])
+    raw = util.to_mne_raw(data["data"][3:][0])
     raw.add_events(mne.find_events(raw))
 
     # Plot raw
@@ -33,7 +33,7 @@ def plot_raw():
 
     # Downsample
     downsampled = raw.copy()
-    downsampled = downsampled.resample(process.final_sfreq)
+    downsampled = downsampled.resample(util.sfreq)
     downsampled_plot = downsampled.plot(
         duration=10, n_channels=22, show_scrollbars=False
     )
@@ -41,15 +41,25 @@ def plot_raw():
 
     # Bandpass filter
     filtered = raw.copy()
-    filtered = filtered.filter(l_freq=process.l_freq, h_freq=process.h_freq)
+    filtered = filtered.filter(l_freq=util.l_freq, h_freq=util.h_freq)
     filtered_plot = filtered.plot(duration=10, n_channels=22, show_scrollbars=False)
     filtered_plot.savefig("data/plots/raw_filtered.pdf")
 
 
 def plot_epochs():
 
-    # Read Epochs
-    epochs = mne.read_epochs("data/processed/subject1-epo.fif", preload=True)
+    # Read raw
+    data = loadmat(
+        "data/raw/subject1/A01T.mat",
+        struct_as_record=False,
+        squeeze_me=True,
+    )
+    raw = util.to_mne_raw(data["data"][3:][0])
+    events = mne.find_events(raw)
+    raw.add_events(events)
+
+    # Epoch
+    epochs = util.to_mne_epochs(raw, events)
 
     # Plot Epochs for single channel
     epochs_plot = epochs.plot_image(picks=["Fz"])[0]

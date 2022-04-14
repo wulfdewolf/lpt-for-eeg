@@ -2,56 +2,62 @@ import mne
 import os
 import numpy
 
-import process
+import util
 
 
-def feature_extract():
+def feature_extract(create_labels):
 
-    # Loop over processed data
-    for subject_id in range(len(os.listdir("data/processed"))):
+    # Per subject
+    for subject_id in range(1, len(os.listdir("data/processed")) + 1):
 
-        epochs = mne.read_epochs(
-            "data/processed/subject" + str(subject_id + 1) + "-epo.fif", preload=True
+        subject_epochs = util.subject_epochs(subject_id)
+        epochs_data = subject_epochs.get_data(units="uV")
+
+        # Drop last of epochs data samples (always one extra)
+        epochs_data = epochs_data[:, :, : epochs_data[0][0].shape[0] - 1]
+
+        # Create windows in epochs (6, epochs, channels, samples)
+        windows_in_epochs_data = numpy.split(epochs_data, 6, 2)
+
+        # Calculate psds for windows
+        psds = []
+        psd_estimator = mne.decoding.PSDEstimator(
+            util.sfreq, fmin=util.l_freq, fmax=util.h_freq
         )
+        for window in windows_in_epochs_data:
+            psd = psd_estimator.transform(window)
+            psds.append(psd)
 
-        # PSD -> (n_epochs, n_channels, n_freq, n_windows)
-        psd = mne.time_frequency.psd_welch(
-            epochs,
-            n_overlap=0,
-            fmin=process.l_freq,
-            fmax=process.h_freq,
-            average=None,
-            n_fft=int(
-                (process.window_size * process.final_sfreq) / 10
-            ),  # ( epoch_length * sfreq) / n_windows_in_epoch) we want 10 non-overlapping windows
-        )[0]
+        # Stack (epochs, windows, channels, freqs)
+        concatenated_psds = numpy.stack(psds, axis=1)
 
-        # Transform to have correct labels + flatten channels
-        psd = numpy.swapaxes(psd, 2, 3)  # (n_epochs, n_channels, n_windows, n_freq)
-        psd = psd.reshape(
-            -1, *psd.shape[-2:]
-        )  # (n_epochs * n_channels, n_windows, n_freq)
-        psd_labels = epochs.events[:, 2].repeat(22)
+        # Vectorize
+        vectorized = []
+        vectorizer = mne.decoding.Vectorizer()
+        for epoch in concatenated_psds:
+            vectorized.append(vectorizer.fit_transform(epoch))
 
-        # Save data
+        # Stack (epochs, windows, channels * freqs)
+        vectorized = numpy.stack(vectorized, axis=0)
+
+        # Save features
         with open(
-            "data/feature_extracted/subject" + str(subject_id + 1) + "_data.npy", "wb"
+            "data/feature_extracted/subject" + str(subject_id) + "_features.npy", "wb"
         ) as f:
-            numpy.save(f, psd)
+            numpy.save(f, vectorized)
 
-        # Save labels
-        with open(
-            "data/feature_extracted/subject" + str(subject_id + 1) + "_labels.npy", "wb"
-        ) as f:
-            numpy.save(f, psd_labels)
+        if create_labels:
+            epochs_labels = subject_epochs.events[:, 2] - 1
+            with open(
+                "data/labels/subject" + str(subject_id) + "_labels.npy", "wb"
+            ) as f:
+                numpy.save(f, epochs_labels)
+
+            # Safety check
+            assert len(epochs_data) == len(epochs_labels)
 
 
 if __name__ == "__main__":
-
-    # Verify if processed data exists
-    if not os.path.isdir("data/processed"):
-        print("processed data doesn't exist!")
-        quit()
 
     # Create feature_extracted folder
     if os.path.isdir("data/feature_extracted"):
@@ -60,4 +66,9 @@ if __name__ == "__main__":
     else:
         os.mkdir("data/feature_extracted")
 
-    feature_extract()
+    # Create labels folder
+    create_labels = not os.path.isdir("data/labels")
+    if create_labels:
+        os.mkdir("data/labels")
+
+    feature_extract(create_labels)
