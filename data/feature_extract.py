@@ -16,8 +16,8 @@ def feature_extract(create_labels):
         # Drop last of epochs data samples (always one extra)
         epochs_data = epochs_data[:, :, : epochs_data[0][0].shape[0] - 1]
 
-        # Create windows in epochs (6, epochs, channels, samples)
-        windows_in_epochs_data = numpy.split(epochs_data, 6, 2)
+        # Create windows in epochs (windows, epochs, channels, samples)
+        windows_in_epochs_data = numpy.split(epochs_data, util.f_windows, 2)
 
         # Calculate psds for windows
         psds = []

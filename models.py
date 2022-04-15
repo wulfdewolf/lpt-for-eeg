@@ -90,8 +90,8 @@ class FreezableGPT2(torch.nn.Module):
         )
         x = transformer_outputs.last_hidden_state
 
-        # Pass through output NN
-        x = self.out_net(x)
+        # Pass token that corresponds to last through output NN
+        x = self.out_net(x[:, -1, :])
 
-        # Return last output
-        return x[None, -1, :]
+        # Return output
+        return x

@@ -1,6 +1,5 @@
 import torch
 import os
-import mne
 import numpy
 import random
 
@@ -70,26 +69,25 @@ def get_training_batch(subjects, indices):
     return torch.cat(Xs, dim=0), torch.cat(ys, dim=0)
 
 
-def dataset_per_subject(directory):
+def dataset_per_subject(data_dir, labels_dir):
 
-    epochs_list = [
-        mne.read_epochs(directory + "/" + file) for file in os.listdir(directory)
-    ]
+    # Read X
+    Xs = [numpy.load(data_dir + file) for file in sorted(os.listdir(data_dir))]
 
-    n_subjects = len(epochs_list)
-    n_channels = epochs_list[0].get_data().shape[1]
-    n_classes = len(epochs_list[0].event_id.keys())
+    # Read Ys
+    Ys = [numpy.load(labels_dir + file) for file in sorted(os.listdir(labels_dir))]
+
+    # Dimensions
+    n_subjects = len(Xs)
+    input_dim = Xs[0].shape[2]
+    output_dim = len(numpy.unique(Ys[0]))
+
+    print("INPUT DIM: " + str(input_dim))
+    print("OUTPUT DIM: " + str(output_dim))
 
     return (
-        [
-            EpochsDataset(
-                # Go from (channels x samples) to (samples x channels)
-                numpy.swapaxes(epochs.get_data(), 1, 2),
-                epochs.events[:, 2] - 1,
-            )
-            for epochs in epochs_list
-        ],
+        [EpochsDataset(X, y) for X, y in zip(Xs, Ys)],
         n_subjects,
-        n_channels,
-        n_classes,
+        input_dim,
+        output_dim,
     )

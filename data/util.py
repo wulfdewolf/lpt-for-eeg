@@ -51,6 +51,9 @@ tmin = -2
 tmax = 4
 window_size = abs(tmin) + tmax
 
+# Windows for feature extraction
+f_windows = 10
+
 
 def to_mne_raw(run):
     """Convert one run to raw."""

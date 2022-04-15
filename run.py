@@ -36,10 +36,21 @@ if __name__ == "__main__":
         help="Whether or not cluster-specific settings apply.",
     )
     parser.add_argument(
+        "--cluster-data-path",
+        default="/data/brussel102/vsc/vsc10248/",
+        type=str,
+        help="Specific data folder for when running on cluster.",
+    )
+    parser.add_argument(
         "--optimise",
         default=None,
         type=int,
         help="Whether or not to optimise and how much random search tries should be executed.",
+    )
+    parser.add_argument(
+        "--features",
+        action="store_true",
+        help="Whether or not to use the extracted features instead of the processed data.",
     )
     parser.add_argument(
         "--name",
@@ -94,7 +105,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--orth-gain",
-        default=None,
+        default=1.41,
         type=float,
         help="Hyperparameter: orthogonal gain of input layer.",
     )
@@ -153,11 +164,12 @@ if __name__ == "__main__":
         )
 
         # Datasets
-        # TODO: add argument to get other processed data
-        subjects, n_subjects, n_channels, n_classes = dataset.dataset_per_subject(
-            "/data/brussel/102/vsc10248/data/processed"
-            if args.cluster
-            else "data/processed",
+        data_dir = "data/feature_extracted/" if args.features else "data/processed/"
+        data_dir = args.cluster_data_path + data_dir if args.cluster else data_dir
+        labels_dir = "data/labels/"
+        labels_dir = args.cluster_data_path + labels_dir if args.cluster else labels_dir
+        subjects, n_subjects, input_dim, output_dim = dataset.dataset_per_subject(
+            data_dir, labels_dir
         )
         for subject in subjects:
             subject.to(device)  # Read in once
@@ -215,8 +227,8 @@ if __name__ == "__main__":
             """
 
             model = models.FreezableGPT2(
-                n_channels,
-                n_classes,
+                input_dim,
+                output_dim,
                 hyperparams["dropout"],
                 orth_gain=hyperparams["orth_gain"],
                 pretrained=args.pretrained_transformer,
@@ -247,8 +259,6 @@ if __name__ == "__main__":
                     job_type=run_type,
                     reinit=True,
                 )
-                # TODO: see what this actually does
-                # wandb.watch(model)
 
             """
             TRAINING
@@ -258,12 +268,11 @@ if __name__ == "__main__":
             ce_loss = torch.nn.CrossEntropyLoss()
 
             def loss_fn(out, y):
-                out = out[:, 0]
                 return ce_loss(out, y)
 
             # Accuracy
             def acc_fn(preds, true):
-                preds = preds[:, 0].argmax(-1)
+                preds = numpy.argmax(preds, axis=1)
                 return (preds == true).mean()
 
             # Optimiser
@@ -305,7 +314,7 @@ if __name__ == "__main__":
                         train_acc += acc_fn(
                             output.detach().cpu().numpy(),
                             batch_y.detach().cpu().numpy(),
-                        ) / (n_train_batches + gradient_accumulation_steps)
+                        ) / (n_train_batches * gradient_accumulation_steps)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -471,17 +480,17 @@ if __name__ == "__main__":
         # Hyperparameters
         hyperparams = {
             "freeze_until": hyperopt.hp.randint("freeze_until", 11),
-            "lr": hyperopt.hyperopt.hp.loguniform(
-                "lr", numpy.log(5e-5), numpy.log(1e-1)
-            ),
+            # "lr": hyperopt.hyperopt.hp.loguniform(
+            #    "lr", numpy.log(5e-5), numpy.log(1e-1)
+            # ),
             "batch_size": hyperopt.hp.choice("batch_size", [16, 32, 64, 128]),
             "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
-            "dropout": hyperopt.hp.loguniform(
-                "dropout", numpy.log(0.001), numpy.log(1.0)
-            ),
-            "orth_gain": hyperopt.hp.loguniform(
-                "orth_gain", numpy.log(0.001), numpy.log(2.0)
-            ),
+            # "dropout": hyperopt.hp.loguniform(
+            #    "dropout", numpy.log(0.001), numpy.log(1.0)
+            # ),
+            # "orth_gain": hyperopt.hp.loguniform(
+            #    "orth_gain", numpy.log(0.001), numpy.log(2.0)
+            # ),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)
