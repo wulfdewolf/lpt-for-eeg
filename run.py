@@ -22,7 +22,7 @@ mne.set_log_level(False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Fine-tunes GPT2 on EEG data.",
+        description="Fine-tunes GPT2 to the classification of the EEG Graz dataset A.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--learning-rate",
-        default=0.0005,
+        default=0.001,
         type=float,
         help="Hyperparameter: learning rate.",
     )
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     tqdm.tqdm.write("Available CPU(S): " + str(n_cpus))
     if torch.cuda.is_available():
         tqdm.tqdm.write("GPU(s) detected: running on GPU.")
-        device = torch.device("cpu")
+        device = torch.device("cuda")
     else:
         tqdm.tqdm.write("No GPU(s) detected: running on CPU.")
         device = torch.device("cpu")
@@ -368,6 +368,7 @@ if __name__ == "__main__":
 
                 # Retain best
                 if validation_acc > validation_acc_best:
+                    tqdm.tqdm.write("New best, storing model params.")
                     best_model_params = copy.deepcopy(model.state_dict())
                     validation_acc_best = validation_acc
 
@@ -480,17 +481,17 @@ if __name__ == "__main__":
         # Hyperparameters
         hyperparams = {
             "freeze_until": hyperopt.hp.randint("freeze_until", 11),
-            # "lr": hyperopt.hyperopt.hp.loguniform(
-            #    "lr", numpy.log(5e-5), numpy.log(1e-1)
-            # ),
+            "lr": hyperopt.hyperopt.hp.loguniform(
+                "lr", numpy.log(5e-5), numpy.log(1e-1)
+            ),
             "batch_size": hyperopt.hp.choice("batch_size", [16, 32, 64, 128]),
             "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
-            # "dropout": hyperopt.hp.loguniform(
-            #    "dropout", numpy.log(0.001), numpy.log(1.0)
-            # ),
-            # "orth_gain": hyperopt.hp.loguniform(
-            #    "orth_gain", numpy.log(0.001), numpy.log(2.0)
-            # ),
+            "dropout": hyperopt.hp.loguniform(
+                "dropout", numpy.log(0.001), numpy.log(1.0)
+            ),
+            "orth_gain": hyperopt.hp.loguniform(
+                "orth_gain", numpy.log(0.001), numpy.log(2.0)
+            ),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)
