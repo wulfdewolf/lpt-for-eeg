@@ -2,7 +2,7 @@ import mne
 import os
 from scipy.io import loadmat
 
-import util
+import process
 
 
 def plot_raw():
@@ -13,7 +13,7 @@ def plot_raw():
         struct_as_record=False,
         squeeze_me=True,
     )
-    raw = util.to_mne_raw(data["data"][3:][0])
+    raw = process.to_mne_raw(data["data"][3:][0])
     raw.add_events(mne.find_events(raw))
 
     # Plot raw
@@ -25,7 +25,7 @@ def plot_raw():
     psd_plot.savefig("data/plots/raw_psd.pdf")
 
     # ICA
-    ica = mne.preprocessing.ICA(n_components=10, method="fastica", random_state=23)
+    ica = mne.preprocessing.ICA(n_components=20, method="fastica", random_state=23)
     ica.fit(raw, reject=dict(mag=5e-12, grad=4000e-13))
     raw.load_data()
     ica_plot = ica.plot_sources(raw, start=0, stop=10, show_scrollbars=False)
@@ -33,7 +33,7 @@ def plot_raw():
 
     # Downsample
     downsampled = raw.copy()
-    downsampled = downsampled.resample(util.sfreq)
+    downsampled = downsampled.resample(process.sfreq)
     downsampled_plot = downsampled.plot(
         duration=10, n_channels=22, show_scrollbars=False
     )
@@ -41,7 +41,7 @@ def plot_raw():
 
     # Bandpass filter
     filtered = raw.copy()
-    filtered = filtered.filter(l_freq=util.l_freq, h_freq=util.h_freq)
+    filtered = filtered.filter(l_freq=process.l_freq, h_freq=process.h_freq)
     filtered_plot = filtered.plot(duration=10, n_channels=22, show_scrollbars=False)
     filtered_plot.savefig("data/plots/raw_filtered.pdf")
 
@@ -54,12 +54,12 @@ def plot_epochs():
         struct_as_record=False,
         squeeze_me=True,
     )
-    raw = util.to_mne_raw(data["data"][3:][0])
+    raw = process.to_mne_raw(data["data"][3:][0])
     events = mne.find_events(raw)
     raw.add_events(events)
 
     # Epoch
-    epochs = util.to_mne_epochs(raw, events)
+    epochs = process.to_mne_epochs(raw, events)
 
     # Plot Epochs for single channel
     epochs_plot = epochs.plot_image(picks=["Fz"])[0]
