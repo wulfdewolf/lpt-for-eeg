@@ -45,7 +45,7 @@ if __name__ == "__main__":
         "--optimise",
         default=None,
         type=int,
-        help="Whether or not to optimise and how much random search tries should be executed.",
+        help="Whether or not to optimise and how much random search tries should be executed. Only batch_size, epochs, and freeze_until are optimised.",
     )
     parser.add_argument(
         "--features",
@@ -480,12 +480,14 @@ if __name__ == "__main__":
 
         # Hyperparameters
         hyperparams = {
-            "freeze_until": hyperopt.hp.randint("freeze_until", 11),
+            # Fixed
             "lr": args.__dict__.pop("learning_rate"),
-            "batch_size": hyperopt.hp.choice("batch_size", [8, 16, 32, 64]),
-            "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
+            # Optimisable
+            "freeze_until": hyperopt.hp.randint("freeze_until", 11),
+            "batch_size": hyperopt.hp.choice("batch_size", [8, 16, 32, 64]),
+            "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)

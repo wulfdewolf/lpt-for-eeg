@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=fpt-for-eeg
 #SBATCH --time=120:00:00
-#SBATCH --mem=32G
-#SBATCH --cpus-per-gpu=8
-#SBATCH --gpus=2
+#SBATCH --nodes=1
+#SBATCH --partition=ampere_gpu
+#SBATCH --mem=64G
+#SBATCH --exclusive
 
 module load PyTorch/1.7.1-fosscuda-2020b
 module load wandb/0.12.5-GCCcore-10.2.0
