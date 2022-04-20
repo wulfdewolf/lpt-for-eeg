@@ -53,7 +53,7 @@ class FreezableGPT2(torch.nn.Module):
         for name, p in self.transformer.named_parameters():
             name = name.lower()
 
-            # Only freeze decoder parameters
+            # Decoder parameters
             if name.split(".")[1].isdigit():
                 layer_number = int(name.split(".")[1])
 

@@ -481,17 +481,11 @@ if __name__ == "__main__":
         # Hyperparameters
         hyperparams = {
             "freeze_until": hyperopt.hp.randint("freeze_until", 11),
-            "lr": hyperopt.hyperopt.hp.loguniform(
-                "lr", numpy.log(5e-5), numpy.log(1e-1)
-            ),
-            "batch_size": hyperopt.hp.choice("batch_size", [16, 32, 64, 128]),
+            "lr": args.__dict__.pop("learning_rate"),
+            "batch_size": hyperopt.hp.choice("batch_size", [8, 16, 32, 64]),
             "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
-            "dropout": hyperopt.hp.loguniform(
-                "dropout", numpy.log(0.001), numpy.log(1.0)
-            ),
-            "orth_gain": hyperopt.hp.loguniform(
-                "orth_gain", numpy.log(0.001), numpy.log(2.0)
-            ),
+            "dropout": args.__dict__.pop("dropout"),
+            "orth_gain": args.__dict__.pop("orth_gain"),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)

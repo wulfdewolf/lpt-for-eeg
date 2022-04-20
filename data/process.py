@@ -53,7 +53,7 @@ tmax = 4
 window_size = abs(tmin) + tmax
 
 # Windows for feature extraction
-f_windows = 10
+f_windows = 25
 
 
 def to_mne_raw(run):
