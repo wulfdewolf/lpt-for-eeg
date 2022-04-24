@@ -245,6 +245,9 @@ if __name__ == "__main__":
 
             if args.wandb:
                 group_name = f"{args.name}-{run_id}"
+                group_name = (
+                    group_name + "-features" if args.features else group_name + "-raw"
+                )
                 config = dict(
                     **vars(args),
                     hyperparams=hyperparams,
