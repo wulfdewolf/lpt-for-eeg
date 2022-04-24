@@ -318,9 +318,12 @@ if __name__ == "__main__":
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimiser.step()
-                    model.zero_grad(
-                        set_to_none=True
-                    )  # Setting to None is faster than to 0
+                    if args.cluster is not None and "wdewolf" in args.cluster:
+                        model.zero_grad()
+                    else:
+                        model.zero_grad(
+                            set_to_none=True
+                        )  # Setting to None is faster than to 0 but only newer versions of pytorch support it
 
                 # Reset sampler
                 train_sampler.reset()
