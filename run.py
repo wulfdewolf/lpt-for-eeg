@@ -273,7 +273,9 @@ if __name__ == "__main__":
                 return (preds == true).mean()
 
             # Optimiser
-            optimiser = torch.optim.Adam(model.parameters(), lr=hyperparams["lr"])
+            optimiser = torch.optim.Adam(
+                model.parameters(), lr=hyperparams["learning_rate"]
+            )
 
             # Epochs
             validation_acc_best = 0.0
@@ -457,7 +459,7 @@ if __name__ == "__main__":
         # Hyperparams
         hyperparams = {
             "freeze_until": args.__dict__.pop("freeze_until"),
-            "lr": args.__dict__.pop("learning_rate"),
+            "learning_rate": args.__dict__.pop("learning_rate"),
             "batch_size": args.__dict__.pop("batch_size"),
             "epochs": args.__dict__.pop("epochs"),
             "dropout": args.__dict__.pop("dropout"),
@@ -480,9 +482,11 @@ if __name__ == "__main__":
             # Fixed
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            "freeze_until": hyperopt.hp.randint("freeze_until", 11),
+            "freeze_until": args.__dict__.pop("freeze_until"),
             # Optimisable
-            "lr": hyperopt.hp.loguniform("lr", numpy.log(5e-5), numpy.log(1e-1)),
+            "learning_rate": hyperopt.hp.loguniform(
+                "learning_rate", numpy.log(5e-5), numpy.log(1e-1)
+            ),
             "batch_size": hyperopt.hp.choice("batch_size", [8, 16, 32, 64]),
             "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
         }
