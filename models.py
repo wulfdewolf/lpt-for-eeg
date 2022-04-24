@@ -61,12 +61,6 @@ class FreezableGPT2(torch.nn.Module):
                 if layer_number <= freeze_until:
                     if "ln" in name or "norm" in name:
                         p.requires_grad = not freeze_ln
-                    elif (
-                        "wpe" in name
-                        or "position_embeddings" in name
-                        or "pos_drop" in name
-                    ):
-                        p.requires_grad = not freeze_pos
                     elif "mlp" in name:
                         p.requires_grad = not freeze_ff
                     elif "attn" in name:
@@ -74,7 +68,15 @@ class FreezableGPT2(torch.nn.Module):
                 else:
                     p.requires_grad = True
 
-            # Always freeze non decoder parameters
+            # Positional embeddings
+            elif "wpe" in name or "position_embeddings" in name or "pos_drop" in name:
+                p.requires_grad = not freeze_pos
+
+            # Final layer norm
+            elif "ln" in name or "norm" in name:
+                p.requires_grad = not freeze_ln
+
+            # Others are frozen
             else:
                 p.requires_grad = False
 
