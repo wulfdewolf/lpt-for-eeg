@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=fpt-for-eeg
-#SBATCH --time=120:00:00
+#SBATCH --time=5-00:00:00
 #SBATCH --nodes=1
-#SBATCH --partition=ampere_gpu
+#SBATCH --partition=ampere_gpu,pascal_gpu
 #SBATCH --mem=64G
 #SBATCH --exclusive
 
@@ -17,7 +17,7 @@ cd ~/fpt-for-eeg
 virtualenv --system-site-packages /tmp/env
 source /tmp/env/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -r scripts/cluster/requirements.txt
+python -m pip install -r scripts/cluster/hydra/requirements.txt
 
 # WandB key
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
@@ -27,5 +27,5 @@ export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 #              --pretrained-transformer --freeze-ff --freeze-attn
 
 # Optimisation run for features
-python run.py --cluster --wandb --optimise 40 --features \
+python run.py --cluster /data/brussel/102/vsc10248 --wandb --optimise 40 --features \
               --pretrained-transformer --freeze-ff --freeze-attn

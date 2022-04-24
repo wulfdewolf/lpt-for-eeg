@@ -32,14 +32,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--cluster",
-        action="store_true",
-        help="Whether or not cluster-specific settings apply.",
-    )
-    parser.add_argument(
-        "--cluster-data-path",
-        default="/data/brussel102/vsc/vsc10248/",
+        default=None,
         type=str,
-        help="Specific data folder for when running on cluster.",
+        help="Whether or not cluster-specific settings apply and the directory in which the data is stored.",
     )
     parser.add_argument(
         "--optimise",
@@ -125,7 +120,7 @@ if __name__ == "__main__":
     cwd = os.getcwd()
 
     # Cluster specific settings (Hydra)
-    if args.cluster:
+    if args.cluster is not None:
 
         # Specific threads when running on Hydra HPC (https://hpc.vub.be/docs/software/usecases/#pytorch)
         torch.set_num_threads(len(os.sched_getaffinity(0)))
@@ -165,9 +160,11 @@ if __name__ == "__main__":
 
         # Datasets
         data_dir = "data/feature_extracted/" if args.features else "data/processed/"
-        data_dir = args.cluster_data_path + data_dir if args.cluster else data_dir
+        data_dir = args.cluster + data_dir if args.cluster is not None else data_dir
         labels_dir = "data/labels/"
-        labels_dir = args.cluster_data_path + labels_dir if args.cluster else labels_dir
+        labels_dir = (
+            args.cluster + labels_dir if args.cluster is not None else labels_dir
+        )
         subjects, n_subjects, input_dim, output_dim = dataset.dataset_per_subject(
             data_dir, labels_dir
         )
@@ -481,11 +478,11 @@ if __name__ == "__main__":
         # Hyperparameters
         hyperparams = {
             # Fixed
-            "lr": args.__dict__.pop("learning_rate"),
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            # Optimisable
             "freeze_until": hyperopt.hp.randint("freeze_until", 11),
+            # Optimisable
+            "lr": hyperopt.hp.loguniform("lr", numpy.log(5e-5), numpy.log(1e-1)),
             "batch_size": hyperopt.hp.choice("batch_size", [8, 16, 32, 64]),
             "epochs": hyperopt.hp.choice("epochs", [8, 16, 32, 64]),
         }
@@ -514,8 +511,8 @@ if __name__ == "__main__":
             search_alg=hyperopt_search,
             progress_reporter=reporter,
             checkpoint_freq=0,
-            local_dir="/data/brussel/102/vsc10248/optimisation"
-            if args.cluster
+            local_dir=args.cluster + "/optimisation"
+            if args.cluster is not None
             else "optimisation",
         )
 
