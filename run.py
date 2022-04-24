@@ -491,9 +491,9 @@ if __name__ == "__main__":
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)
-        hyperopt_search = ray.tune.suggest.HyperOptSearch(
-            hyperparams, metric="accuracy", mode="max"
-        )
+        from ray.tune.suggest.hyperopt import HyperOptSearch
+
+        hyperopt_search = HyperOptSearch(hyperparams, metric="accuracy", mode="max")
 
         # Tune reporter
         reporter = ray.tune.CLIReporter(
