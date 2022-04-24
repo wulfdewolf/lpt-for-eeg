@@ -23,9 +23,5 @@ python -m pip install -r scripts/cluster/hydra/requirements.txt
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
 # Optimisation run for raw
-#python run.py --cluster --wandb --optimise 40 \
-#              --pretrained-transformer --freeze-ff --freeze-attn
-
-# Optimisation run for features
-python run.py --cluster /data/brussel/102/vsc10248 --wandb --optimise 40 --features \
-              --pretrained-transformer --freeze-ff --freeze-attn
+python run.py --cluster /data/brussel/102/vsc10248 --wandb --optimise 50 \
+              --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 11
