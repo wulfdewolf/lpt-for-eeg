@@ -493,7 +493,7 @@ if __name__ == "__main__":
                 "learning_rate", numpy.log(5e-5), numpy.log(1e-1)
             ),
             "batch_size": hyperopt.hp.choice("batch_size", [2, 4, 8, 16, 32, 64]),
-            "epochs": hyperopt.hp.choice("epochs", [2, 4, 8, 16, 32, 64]),
+            "epochs": hyperopt.hp.choice("epochs", [2, 4, 8, 16, 32]),
         }
 
         # Tune algorithm (Tree-structured Parzen Estimator)
