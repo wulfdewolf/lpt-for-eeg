@@ -1,3 +1,4 @@
+from turtle import down
 import mne
 import numpy
 import os
@@ -53,7 +54,7 @@ tmax = 4
 window_size = abs(tmin) + tmax
 
 # Windows for feature extraction
-f_windows = 25
+f_windows = 10
 
 
 def to_mne_raw(run):
@@ -99,7 +100,7 @@ def to_mne_epochs(raw, events):
     )
 
 
-def get_subject_epochs(subject_id):
+def get_subject_epochs(subject_id, downsample=True):
     """
     Collect a subject's runs in one large mne.Epochs
 
@@ -131,7 +132,8 @@ def get_subject_epochs(subject_id):
             raw.filter(l_freq=l_freq, h_freq=h_freq)
 
             # Downsample to 125Hz (> 2*45Hz)
-            raw.resample(sfreq)
+            if downsample:
+                raw.resample(sfreq)
 
             # Get events now that resampling has been done
             events = mne.find_events(raw)
@@ -158,102 +160,106 @@ if __name__ == "__main__":
         print("data/raw folder does not exist, run data/download.sh first!")
         quit()
 
-    # Create processed folder
-    if os.path.isdir("data/processed"):
-        delete = input("data/processed folder exists already, clear? (y/n)")
+    """
+        PREPROCESSING
+    """
+    processed_exists = os.path.isdir("data/processed")
 
-        if delete == "y":
+    if processed_exists:
+        redo = input("data/processed folder exists already, redo? (y/n)")
+        if redo == "y":
             shutil.rmtree("data/processed")
-        else:
-            quit()
-    os.mkdir("data/processed")
 
-    # Create feature_extracted folder
-    if os.path.isdir("data/feature_extracted"):
-        delete = input("data/feature_extracted folder exists already, clear? (y/n)")
+    if not processed_exists or redo == "y":
+        os.mkdir("data/processed")
 
-        if delete == "y":
+        # Per subject
+        for subject_id in range(1, len(os.listdir("data/raw")) + 1):
+
+            subject_epochs = get_subject_epochs(subject_id, downsample=True)
+            epochs_data = subject_epochs.get_data(units="uV")
+            epochs_labels = subject_epochs.events[:, 2] - 1
+
+            # Safety check
+            assert len(epochs_data) == len(epochs_labels)
+
+            # Save labels
+            with open(
+                "data/processed/subject" + str(subject_id) + "_labels.npy", "wb"
+            ) as f:
+                numpy.save(f, epochs_labels)
+
+            # Standardize
+            processed_data = mne.decoding.Scaler(scalings="mean").fit_transform(
+                epochs_data
+            )
+
+            # Change dimensions: (epochs, channels, samples) -> (epochs, samples, channels)
+            processed_data = numpy.swapaxes(processed_data, 1, 2)
+
+            # Save processed data
+            with open(
+                "data/processed/subject" + str(subject_id) + "_timepoints.npy", "wb"
+            ) as f:
+                numpy.save(f, processed_data)
+
+    """
+        FEATURE EXTRACTION
+    """
+    feature_extracted_exists = os.path.isdir("data/feature_extracted")
+
+    if feature_extracted_exists:
+        redo = input("data/feature_extracted folder exists already, redo? (y/n)")
+        if redo == "y":
             shutil.rmtree("data/feature_extracted")
-        else:
-            quit()
-    os.mkdir("data/feature_extracted")
 
-    # Create labels folder
-    if os.path.isdir("data/labels"):
-        delete = input("data/labels folder exists already, clear? (y/n)")
+    if not feature_extracted_exists or redo == "y":
+        os.mkdir("data/feature_extracted")
 
-        if delete == "y":
-            shutil.rmtree("data/labels")
-        else:
-            quit()
-    os.mkdir("data/labels")
+        # Per subject
+        for subject_id in range(1, len(os.listdir("data/raw")) + 1):
 
-    # Per subject
-    for subject_id in range(1, len(os.listdir("data/raw")) + 1):
+            subject_epochs = get_subject_epochs(subject_id, downsample=False)
+            epochs_data = subject_epochs.get_data(units="uV")
+            epochs_labels = subject_epochs.events[:, 2] - 1
 
-        subject_epochs = get_subject_epochs(subject_id)
+            # Safety check
+            assert len(epochs_data) == len(epochs_labels)
 
-        """
-            PREPROCESSING
-        """
-        epochs_data = subject_epochs.get_data(units="uV")
+            # Save labels
+            with open(
+                "data/feature_extracted/subject" + str(subject_id) + "_labels.npy", "wb"
+            ) as f:
+                numpy.save(f, epochs_labels)
 
-        # Standardize
-        processed_data = mne.decoding.Scaler(scalings="mean").fit_transform(epochs_data)
+            # Drop last of epochs data samples (always one extra)
+            features_data = epochs_data[:, :, : epochs_data[0][0].shape[0] - 1]
 
-        # Change dimensions: (epochs, channels, samples) -> (epochs, samples, channels)
-        processed_data = numpy.swapaxes(processed_data, 1, 2)
+            # Create windows in epochs (windows, epochs, channels, samples)
+            windows_in_features = numpy.split(features_data, f_windows, 2)
 
-        # Save processed data
-        with open(
-            "data/processed/subject" + str(subject_id) + "_timepoints.npy", "wb"
-        ) as f:
-            numpy.save(f, processed_data)
+            # Calculate psds for windows
+            psds = []
+            psd_estimator = mne.decoding.PSDEstimator(sfreq, fmin=l_freq, fmax=h_freq)
+            for window in windows_in_features:
+                psd = psd_estimator.transform(window)
+                psds.append(psd)
 
-        """
-            FEATURE EXTRACTION
-        """
-        epochs_data = subject_epochs.get_data(units="uV")
+            # Stack (epochs, windows, channels, freqs)
+            concatenated_psds = numpy.stack(psds, axis=1)
 
-        # Drop last of epochs data samples (always one extra)
-        features_data = epochs_data[:, :, : epochs_data[0][0].shape[0] - 1]
+            # Vectorize
+            vectorized = []
+            vectorizer = mne.decoding.Vectorizer()
+            for epoch in concatenated_psds:
+                vectorized.append(vectorizer.fit_transform(epoch))
 
-        # Create windows in epochs (windows, epochs, channels, samples)
-        windows_in_features = numpy.split(features_data, f_windows, 2)
+            # Stack (epochs, windows, channels * freqs)
+            vectorized = numpy.stack(vectorized, axis=0)
 
-        # Calculate psds for windows
-        psds = []
-        psd_estimator = mne.decoding.PSDEstimator(sfreq, fmin=l_freq, fmax=h_freq)
-        for window in windows_in_features:
-            psd = psd_estimator.transform(window)
-            psds.append(psd)
-
-        # Stack (epochs, windows, channels, freqs)
-        concatenated_psds = numpy.stack(psds, axis=1)
-
-        # Vectorize
-        vectorized = []
-        vectorizer = mne.decoding.Vectorizer()
-        for epoch in concatenated_psds:
-            vectorized.append(vectorizer.fit_transform(epoch))
-
-        # Stack (epochs, windows, channels * freqs)
-        vectorized = numpy.stack(vectorized, axis=0)
-
-        # Save features
-        with open(
-            "data/feature_extracted/subject" + str(subject_id) + "_features.npy", "wb"
-        ) as f:
-            numpy.save(f, vectorized)
-
-        """
-            LABELS
-        """
-        epochs_labels = subject_epochs.events[:, 2] - 1
-
-        # Safety check
-        assert len(epochs_data) == len(epochs_labels)
-
-        # Save labels
-        with open("data/labels/subject" + str(subject_id) + "_labels.npy", "wb") as f:
-            numpy.save(f, epochs_labels)
+            # Save features
+            with open(
+                "data/feature_extracted/subject" + str(subject_id) + "_features.npy",
+                "wb",
+            ) as f:
+                numpy.save(f, vectorized)

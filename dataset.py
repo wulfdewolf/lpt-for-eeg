@@ -69,13 +69,21 @@ def get_training_batch(subjects, indices):
     return torch.cat(Xs, dim=0), torch.cat(ys, dim=0)
 
 
-def dataset_per_subject(data_dir, labels_dir):
+def dataset_per_subject(data_dir):
 
     # Read X
-    Xs = [numpy.load(data_dir + file) for file in sorted(os.listdir(data_dir))]
+    Xs = [
+        numpy.load(data_dir + file)
+        for file in sorted(os.listdir(data_dir))
+        if "labels" not in file
+    ]
 
     # Read Ys
-    Ys = [numpy.load(labels_dir + file) for file in sorted(os.listdir(labels_dir))]
+    Ys = [
+        numpy.load(data_dir + file)
+        for file in sorted(os.listdir(data_dir))
+        if "labels" in file
+    ]
 
     # Dimensions
     n_subjects = len(Xs)

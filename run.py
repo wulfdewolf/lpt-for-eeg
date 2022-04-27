@@ -163,12 +163,8 @@ if __name__ == "__main__":
         data_dir = (
             args.cluster + "/" + data_dir if args.cluster is not None else data_dir
         )
-        labels_dir = "data/labels/"
-        labels_dir = (
-            args.cluster + "/" + labels_dir if args.cluster is not None else labels_dir
-        )
         subjects, n_subjects, input_dim, output_dim = dataset.dataset_per_subject(
-            data_dir, labels_dir
+            data_dir
         )
         for subject in subjects:
             subject.to(device)  # Read in once

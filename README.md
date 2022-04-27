@@ -1,4 +1,4 @@
-# Fine-tuning a language-pretrained transformer to the classification of electroencephalography
+# Transfer learning in BCI's: language-pretrained transformers for EEG classification
 
 This repository contains the source code accompanying my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
