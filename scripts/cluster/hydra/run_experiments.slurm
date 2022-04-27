@@ -22,6 +22,23 @@ python -m pip install -r scripts/cluster/hydra/requirements.txt
 # WandB key
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-# Optimisation run for raw
-python run.py --cluster /data/brussel/102/vsc10248 --wandb --optimise 50 \
+# Underneath experiments all use the time-series signal
+
+# Optimisation run
+python run.py --cluster /data/brussel/102/vsc10248 \
+              --wandb --name signal-optimisation \
+              --optimise 50 \
               --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 11
+
+# No pretraining
+python run.py --cluster /data/brussel/102/vsc10248 \
+              --wandb --name signal-random \
+              --batch-size X --epochs Y --learning-rate Z 
+
+# Unfreezing layers
+parallel --delay 0.2 -j 2 --joblog runtask.log --resume srun -N1 -n1 -c4  python run.py --cluster /data/brussel/102/vsc10248 \
+                                                                                        --wandb --name signal-layers-{} \
+                                                                                        --pretrained-transformer \
+                                                                                        --batch-size X --epochs Y --learning-rate Z \
+                                                                                        --freeze-ff --freeze-attn --freeze-until {} ::: {-1..11}
+wait                                                                                        

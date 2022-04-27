@@ -241,18 +241,15 @@ if __name__ == "__main__":
 
             if args.wandb:
                 group_name = f"{args.name}-{run_id}"
-                group_name = (
-                    group_name + "-features" if args.features else group_name + "-raw"
-                )
                 config = dict(
-                    **vars(args),
+                    args.__dict__,
                     hyperparams=hyperparams,
                     run_type=run_type,
                 )
                 run = wandb.init(
                     name="test-subject-" + str(test_subject_idx + 1),
                     group=group_name,
-                    project="fpt-for-eeg",
+                    project="lpt-for-eeg",
                     config=config,
                     job_type=run_type,
                     reinit=True,
@@ -319,7 +316,7 @@ if __name__ == "__main__":
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     optimiser.step()
-                    if args.cluster is not None and "wdewolf" in args.cluster:
+                    if int(torch.__version__[2]) < 7:
                         model.zero_grad()
                     else:
                         model.zero_grad(
