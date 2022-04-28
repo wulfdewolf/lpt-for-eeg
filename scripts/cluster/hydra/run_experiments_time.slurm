@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=fpt-for-eeg
+#SBATCH --job-name=lpt-for-eeg
 #SBATCH --time=5-00:00:00
 #SBATCH --nodes=1
 #SBATCH --partition=ampere_gpu,pascal_gpu
@@ -31,14 +31,14 @@ python run.py --cluster /data/brussel/102/vsc10248 \
               --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 11
 
 # No pretraining
-python run.py --cluster /data/brussel/102/vsc10248 \
-              --wandb --name signal-random \
-              --batch-size X --epochs Y --learning-rate Z 
+#python run.py --cluster /data/brussel/102/vsc10248 \
+#              --wandb --name signal-random \
+#              --batch-size X --epochs Y --learning-rate Z 
 
 # Unfreezing layers
-parallel --delay 0.2 -j 2 --joblog runtask.log --resume srun -N1 -n1 -c4  python run.py --cluster /data/brussel/102/vsc10248 \
-                                                                                        --wandb --name signal-layers-{} \
-                                                                                        --pretrained-transformer \
-                                                                                        --batch-size X --epochs Y --learning-rate Z \
-                                                                                        --freeze-ff --freeze-attn --freeze-until {} ::: {-1..11}
-wait                                                                                        
+#parallel --delay 0.2 -j 2 --joblog runtask.log --resume srun -N1 -n1 -c4  python run.py --cluster /data/brussel/102/vsc10248 \
+#                                                                                        --wandb --name signal-layers-{} \
+#                                                                                        --pretrained-transformer \
+#                                                                                        --batch-size X --epochs Y --learning-rate Z \
+#                                                                                        --freeze-ff --freeze-attn --freeze-until {} ::: {-1..11}
+#wait                                                                                        
