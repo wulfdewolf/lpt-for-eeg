@@ -113,11 +113,11 @@ def get_subject_epochs(subject_id, downsample=True):
     subject_epochs = []
 
     # Per data type (training & evaluation)
-    for run_file in os.listdir("thesis_data/raw/subject" + str(subject_id)):
+    for run_file in os.listdir("data/raw/subject" + str(subject_id)):
 
         # Load raw file
         data = loadmat(
-            "thesis_data/raw/subject" + str(subject_id) + "/" + str(run_file),
+            "data/raw/subject" + str(subject_id) + "/" + str(run_file),
             struct_as_record=False,
             squeeze_me=True,
         )
@@ -155,27 +155,25 @@ def get_subject_epochs(subject_id, downsample=True):
 if __name__ == "__main__":
 
     # Verify if raw folder exists
-    if not os.path.isdir("thesis_data/raw"):
-        print(
-            "thesis_data/raw folder does not exist, run thesis_data/download.sh first!"
-        )
+    if not os.path.isdir("data/raw"):
+        print("data/raw folder does not exist, run data/download.sh first!")
         quit()
 
     """
         PREPROCESSING
     """
-    processed_exists = os.path.isdir("thesis_data/processed")
+    processed_exists = os.path.isdir("data/processed")
 
     if processed_exists:
-        redo = input("thesis_data/processed folder exists already, redo? (y/n)")
+        redo = input("data/processed folder exists already, redo? (y/n)")
         if redo == "y":
-            shutil.rmtree("thesis_data/processed")
+            shutil.rmtree("data/processed")
 
     if not processed_exists or redo == "y":
-        os.mkdir("thesis_data/processed")
+        os.mkdir("data/processed")
 
         # Per subject
-        for subject_id in range(1, len(os.listdir("thesis_data/raw")) + 1):
+        for subject_id in range(1, len(os.listdir("data/raw")) + 1):
 
             subject_epochs = get_subject_epochs(subject_id, downsample=True)
             epochs_data = subject_epochs.get_data(units="uV")
@@ -186,7 +184,7 @@ if __name__ == "__main__":
 
             # Save labels
             with open(
-                "thesis_data/processed/subject" + str(subject_id) + "_labels.npy", "wb"
+                "data/processed/subject" + str(subject_id) + "_labels.npy", "wb"
             ) as f:
                 numpy.save(f, epochs_labels)
 
@@ -200,7 +198,7 @@ if __name__ == "__main__":
 
             # Save processed data
             with open(
-                "thesis_data/processed/subject" + str(subject_id) + "_timepoints.npy",
+                "data/processed/subject" + str(subject_id) + "_timepoints.npy",
                 "wb",
             ) as f:
                 numpy.save(f, processed_data)
@@ -208,18 +206,18 @@ if __name__ == "__main__":
     """
         FEATURE EXTRACTION
     """
-    feature_extracted_exists = os.path.isdir("thesis_data/feature_extracted")
+    feature_extracted_exists = os.path.isdir("data/feature_extracted")
 
     if feature_extracted_exists:
-        redo = input("thesis_data/feature_extracted folder exists already, redo? (y/n)")
+        redo = input("data/feature_extracted folder exists already, redo? (y/n)")
         if redo == "y":
-            shutil.rmtree("thesis_data/feature_extracted")
+            shutil.rmtree("data/feature_extracted")
 
     if not feature_extracted_exists or redo == "y":
-        os.mkdir("thesis_data/feature_extracted")
+        os.mkdir("data/feature_extracted")
 
         # Per subject
-        for subject_id in range(1, len(os.listdir("thesis_data/raw")) + 1):
+        for subject_id in range(1, len(os.listdir("data/raw")) + 1):
 
             subject_epochs = get_subject_epochs(subject_id, downsample=False)
             epochs_data = subject_epochs.get_data(units="uV")
@@ -230,9 +228,7 @@ if __name__ == "__main__":
 
             # Save labels
             with open(
-                "thesis_data/feature_extracted/subject"
-                + str(subject_id)
-                + "_labels.npy",
+                "data/feature_extracted/subject" + str(subject_id) + "_labels.npy",
                 "wb",
             ) as f:
                 numpy.save(f, epochs_labels)
@@ -264,9 +260,7 @@ if __name__ == "__main__":
 
             # Save features
             with open(
-                "thesis_data/feature_extracted/subject"
-                + str(subject_id)
-                + "_features.npy",
+                "data/feature_extracted/subject" + str(subject_id) + "_features.npy",
                 "wb",
             ) as f:
                 numpy.save(f, vectorized)
