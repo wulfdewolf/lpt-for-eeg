@@ -11,7 +11,7 @@ module load wandb/0.12.5-GCCcore-10.2.0
 
 
 # Cwd
-cd ~/fpt-for-eeg
+cd ~/lpt-for-eeg
 
 # Env
 virtualenv --system-site-packages /tmp/env
