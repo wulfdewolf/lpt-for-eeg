@@ -1,4 +1,3 @@
-from turtle import down
 import mne
 import numpy
 import os
