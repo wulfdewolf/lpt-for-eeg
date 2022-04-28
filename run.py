@@ -93,6 +93,12 @@ if __name__ == "__main__":
         help="Hyperparameter: learning rate.",
     )
     parser.add_argument(
+        "--decay",
+        default=None,
+        type=float,
+        help="Hyperparameter: learning rate decay.",
+    )
+    parser.add_argument(
         "--dropout",
         default=0.1,
         type=float,
@@ -275,6 +281,12 @@ if __name__ == "__main__":
                 model.parameters(), lr=hyperparams["learning_rate"]
             )
 
+            # Decay
+            if hyperparams["decay"] is not None:
+                scheduler = torch.optim.lr_scheduler.ExponentialLR(
+                    optimiser, gamma=hyperparams["decay"]
+                )
+
             # Epochs
             validation_acc_best = 0.0
             best_model_params = copy.deepcopy(model.state_dict())
@@ -308,10 +320,13 @@ if __name__ == "__main__":
                         train_loss += loss.detach().cpu().item() / n_train_batches
 
                         # Accuracy
-                        train_acc += acc_fn(
-                            output.detach().cpu().numpy(),
-                            batch_y.detach().cpu().numpy(),
-                        ) / (n_train_batches * gradient_accumulation_steps)
+                        train_acc += (
+                            acc_fn(
+                                output.detach().cpu().numpy(),
+                                batch_y.detach().cpu().numpy(),
+                            )
+                            / (n_train_batches * gradient_accumulation_steps)
+                        )
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -325,6 +340,10 @@ if __name__ == "__main__":
 
                 # Reset sampler
                 train_sampler.reset()
+
+                # Learning rate decay
+                if hyperparams["decay"] is not None:
+                    scheduler.step()
 
                 # Log training scores to terminal
                 tqdm.tqdm.write("Training accuracy: " + str(train_acc))
@@ -461,6 +480,7 @@ if __name__ == "__main__":
         hyperparams = {
             "freeze_until": args.__dict__.pop("freeze_until"),
             "learning_rate": args.__dict__.pop("learning_rate"),
+            "decay": args.__dict__.pop("decay"),
             "batch_size": args.__dict__.pop("batch_size"),
             "epochs": args.__dict__.pop("epochs"),
             "dropout": args.__dict__.pop("dropout"),
@@ -484,6 +504,7 @@ if __name__ == "__main__":
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
             "freeze_until": args.__dict__.pop("freeze_until"),
+            "decay": args.__dict__.pop("decay"),
             # Optimisable
             "learning_rate": hyperopt.hp.loguniform(
                 "learning_rate", numpy.log(5e-5), numpy.log(1e-1)
