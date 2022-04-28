@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=fpt-for-eeg
+#SBATCH --job-name=lpt-for-eeg
 #SBATCH --time=5-00:00:00
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -8,7 +8,7 @@
 module load PyTorch/1.4.0-fosscuda-2019b-Python-3.7.4
 
 # Cwd
-cd ~/fpt-for-eeg
+cd ~/lpt-for-eeg
 
 # Env
 virtualenv --system-site-packages env
