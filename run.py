@@ -251,6 +251,7 @@ if __name__ == "__main__":
                     args.__dict__,
                     hyperparams=hyperparams,
                     run_type=run_type,
+                    data_type="features" if args.features else "time-series",
                 )
                 run = wandb.init(
                     name="test-subject-" + str(test_subject_idx + 1),
@@ -320,13 +321,10 @@ if __name__ == "__main__":
                         train_loss += loss.detach().cpu().item() / n_train_batches
 
                         # Accuracy
-                        train_acc += (
-                            acc_fn(
-                                output.detach().cpu().numpy(),
-                                batch_y.detach().cpu().numpy(),
-                            )
-                            / (n_train_batches * gradient_accumulation_steps)
-                        )
+                        train_acc += acc_fn(
+                            output.detach().cpu().numpy(),
+                            batch_y.detach().cpu().numpy(),
+                        ) / (n_train_batches * gradient_accumulation_steps)
 
                     # Learn
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
