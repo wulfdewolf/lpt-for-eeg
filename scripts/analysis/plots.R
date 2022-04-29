@@ -41,11 +41,15 @@ results$type[2] <- "time-series"
 results$type[3] <- "time-series"
 results$type[4] <- "time-series"
 ggplot(results, aes(y = score, fill=type, color = type)) +
-    geom_boxplot() +
+    geom_boxplot(width=0.4) +
+    xlim(-1,1) +
     facet_wrap(~fct_relevel(type, "time-series", "features"), scales = "free_x", strip.position = "bottom") +
     scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)) +
     scale_fill_manual(values=c("lightsalmon", "skyblue")) +
-    theme(panel.spacing = unit(0, "lines"),
+    theme(text = element_text(size = 30),
+          panel.spacing = unit(0, "lines"),
+          axis.ticks.y = element_line(colour="#e7e7e7"),
+          panel.grid.major.y = element_line(size=0.1, color="#ededed"),
           strip.background = element_blank(),
           panel.background = element_blank(),
           strip.placement = "outside",
