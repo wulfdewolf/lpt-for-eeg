@@ -24,4 +24,4 @@ export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 python run.py --cluster /data/brussel/102/vsc10248 \
               --wandb --name signal-optimisation \
               --optimise 50 \
-              --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 11
+              --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 12

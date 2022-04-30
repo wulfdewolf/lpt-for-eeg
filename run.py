@@ -82,9 +82,9 @@ if __name__ == "__main__":
     # Hyperparameters
     parser.add_argument(
         "--freeze-until",
-        default=-1,
+        default=0,
         type=int,
-        help="Hyperparameter: decoder layers to freeze the specified modules for, starting from 0 up until the specified number, maximum 11.",
+        help="Hyperparameter: decoder layers to freeze the specified modules for, starting from 1 up until the specified number, maximum 12, 0 for no freezing.",
     )
     parser.add_argument(
         "--learning-rate",
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--decay",
-        default=None,
+        default=1,
         type=float,
         help="Hyperparameter: learning rate decay.",
     )
@@ -251,7 +251,7 @@ if __name__ == "__main__":
                     args.__dict__,
                     hyperparams=hyperparams,
                     run_type=run_type,
-                    data_type="features" if args.features else "time-series",
+                    data="features" if args.features else "time-series",
                 )
                 run = wandb.init(
                     name="test-subject-" + str(test_subject_idx + 1),
@@ -283,7 +283,7 @@ if __name__ == "__main__":
             )
 
             # Decay
-            if hyperparams["decay"] is not None:
+            if hyperparams["decay"] < 1:
                 scheduler = torch.optim.lr_scheduler.ExponentialLR(
                     optimiser, gamma=hyperparams["decay"]
                 )
@@ -340,7 +340,7 @@ if __name__ == "__main__":
                 train_sampler.reset()
 
                 # Learning rate decay
-                if hyperparams["decay"] is not None:
+                if hyperparams["decay"] < 1:
                     scheduler.step()
 
                 # Log training scores to terminal
@@ -476,13 +476,13 @@ if __name__ == "__main__":
 
         # Hyperparams
         hyperparams = {
-            "freeze_until": args.__dict__.pop("freeze_until"),
-            "learning_rate": args.__dict__.pop("learning_rate"),
-            "decay": args.__dict__.pop("decay"),
-            "batch_size": args.__dict__.pop("batch_size"),
-            "epochs": args.__dict__.pop("epochs"),
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
+            "freeze_until": args.__dict__.pop("freeze_until"),
+            "decay": args.__dict__.pop("decay"),
+            "learning_rate": args.__dict__.pop("learning_rate"),
+            "batch_size": args.__dict__.pop("batch_size"),
+            "epochs": args.__dict__.pop("epochs"),
         }
 
         # Simple run
@@ -497,6 +497,9 @@ if __name__ == "__main__":
         )
 
         # Hyperparameters
+        args.__dict__.pop("learning_rate")
+        args.__dict__.pop("batch_size")
+        args.__dict__.pop("epochs")
         hyperparams = {
             # Fixed
             "dropout": args.__dict__.pop("dropout"),

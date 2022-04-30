@@ -48,14 +48,14 @@ class FreezableGPT2(torch.nn.Module):
         """
         FREEZING
         """
-        assert freeze_until < 12 and freeze_until > -2
+        assert freeze_until < 13 and freeze_until > -1
 
         for name, p in self.transformer.named_parameters():
             name = name.lower()
 
             # Decoder parameters
             if name.split(".")[1].isdigit():
-                layer_number = int(name.split(".")[1])
+                layer_number = int(name.split(".")[1]) + 1
 
                 # That are <= than a given hyperparameter
                 if layer_number <= freeze_until:

@@ -24,4 +24,4 @@ export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
 python run.py --cluster /data/brussel/102/vsc10248 \
               --wandb --name signal-random \
-              --batch-size X --epochs Y --learning-rate Z 
+              --batch-size 64 --epochs 32 --learning-rate 0.0004

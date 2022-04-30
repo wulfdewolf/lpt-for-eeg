@@ -19,7 +19,7 @@ python -m pip install -r scripts/cluster/ai/requirements.txt
 # WandB key
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-for layer in {-1..11}; do
+for layer in {0..11}; do
     python run.py --cluster /home/wdewolf/lpt-for-eeg \
                   --wandb --name features-unfreezing-${layer} \
                   --features \

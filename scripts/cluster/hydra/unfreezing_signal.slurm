@@ -24,6 +24,6 @@ export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 parallel --delay 0.2 -j 2 --joblog runtask.log --resume srun -N 1 -n 1 -c 8  python run.py --cluster /data/brussel/102/vsc10248 \
                                                                                            --wandb --name signal-unfreezing-{} \
                                                                                            --pretrained-transformer \
-                                                                                           --batch-size X --epochs Y --learning-rate Z \
-                                                                                           --freeze-ff --freeze-attn --freeze-until {} ::: {-1..11}
+                                                                                           --batch-size 64 --epochs 32 --learning-rate 0.0004 \
+                                                                                           --freeze-ff --freeze-attn --freeze-until {} ::: {0..11}
 wait                                                                                        
