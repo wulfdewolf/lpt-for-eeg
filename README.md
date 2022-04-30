@@ -5,7 +5,7 @@ This repository contains the source code accompanying my master's thesis at the 
 Contact information:
 | Name | Email address | Linkedin | GitHub |
 | :--- | :--- | :--- | :--- |
-| Wolf De Wulf | [wolf.de.wulf@vub.be](mailto:wolf.de.wulf@vub.be) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |
+| Wolf De Wulf | [wolf.de.wulf@vub.be](mailto:wolf.de.wulf@vub.be) / [wolf.de.wulf@ed.ac.uk](mailto:wolf.de.wulf@ed.ac.uk) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |
 
 ## Usage
 
@@ -46,32 +46,23 @@ Run the [`process.py`](data/process.py) script to process the data:
 python data/process.py
 ```
 
-The processed data is saved in `data/processed`.
-
-Run the [`feature_extract.py`](data/feature_extract.py) script to process the data and extract features from it:
-
-```console
-python data/process.py
-```
-
-The features are saved in `data/feature_extracted`
+The processed data is saved in `data/processed`, the features are saved in `data/feature_extracted`
 
 ### 3. Running
 
 Run the [`run.py`](run.py) script to see what it can do:
 
 ```console
-python run.py
+python run.py --help
 ```
 
-## Reproducing the experiments
+## Reproducing the empirical evaluations
 
-Run the [`run_experiments.sh`](scripts/local/run_experiments.sh) script to do all of the above and to run
-the experiments:
+The scripts that were used to produce the results presented in the thesis can be found in the [`scripts/cluster`](scripts/cluster) folder.  
+A summary of the results can be found on [Weights & Biases](https://wandb.ai/wulfdewolf/lpt-for-eeg/reports/Transfer-learning-in-BCI-s-language-pretrained-transformers-for-EEG-classification--VmlldzoxOTIxNDU2?accessToken=r4hzxv3i86ovxcf01fdzcebnnpy79nc57stoew4gasvoboual6f2c93131ra4u1z).
 
-```console
-./scripts/local/run_experiments.sh
-```
+**Warning:** The evaluations consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of a large deep learning model.  
+Running the evaluations on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running them can take a long time and a lot of memory.  
+During research everything was ran on the [VUB Hydra HPC](https://hpc.vub.be/) and the [VUB AI lab HPC](https://comopc3.vub.ac.be/).
 
-**Warning:** The experiments consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of a large deep learning model. Running the experiments on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running the experiments can take a long time and a lot of memory.
-During research all experiments were ran on the [VUB Hydra cluster](https://hpc.vub.be/) using the [`run_experiments.slurm`](scripts/cluster/run_experiments.slurm) slurm script.
+If for some reason you want the results in `.csv` format or if you have questions, feel free to contact me via mail.
