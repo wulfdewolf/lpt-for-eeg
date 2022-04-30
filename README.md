@@ -61,10 +61,6 @@ python run.py --help
 The scripts that were used to produce the results presented in the thesis can be found in the [`scripts/cluster`](scripts/cluster) folder.  
 A summary of the results can be found on [Weights & Biases](https://wandb.ai/wulfdewolf/lpt-for-eeg/reports/Transfer-learning-in-BCI-s-language-pretrained-transformers-for-EEG-classification--VmlldzoxOTIxNDU2?accessToken=r4hzxv3i86ovxcf01fdzcebnnpy79nc57stoew4gasvoboual6f2c93131ra4u1z).
 
-**Warning:**  
-The evaluations consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of a large deep learning model.   
-Running the evaluations on a device without a GPU is highly discouraged.  
-Even for devices with a high-end GPU, running them can take a long time and a lot of memory.  
-During research all evaluations were ran on the [VUB Hydra HPC](https://hpc.vub.be/) and the [VUB AI lab HPC](https://comopc3.vub.ac.be/).
+**Warning:** The evaluations consist of hyperparameter optimisation runs, each of which run subject-wise cross-validation of a large deep learning model. Running the evaluations on a device without a GPU is highly discouraged. Even for devices with a high-end GPU, running them can take a long time and a lot of memory. During research all evaluations were ran on the [VUB Hydra HPC](https://hpc.vub.be/) and the [VUB AI lab HPC](https://comopc3.vub.ac.be/).
 
 If for some reason you want the results in `.csv` format or if you have questions, feel free to contact me via mail.
