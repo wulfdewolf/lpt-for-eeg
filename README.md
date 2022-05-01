@@ -11,7 +11,7 @@ Contact information:
 
 ### 1. Installing requirements
 
-Run the [`setup.sh`](requirements/local/setup.sh) script to create a virtual environment that has all
+Run the [`setup.sh`](scripts/local/setup.sh) script to create a virtual environment that has all
 the required python packages installed:
 
 ```console

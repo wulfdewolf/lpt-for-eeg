@@ -22,4 +22,4 @@ export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 python run.py --cluster /home/wdewolf/lpt-for-eeg \
               --wandb --name features-overfitting \
               --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 12
-              --batch-size X --epochs Y --learning-rate Z --decay 0.95
+              --batch-size 64 --epochs 32 --learning-rate 0.00014 --decay 0.95
