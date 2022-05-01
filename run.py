@@ -145,8 +145,8 @@ if __name__ == "__main__":
         device = torch.device("cpu")
     gradient_accumulation = 16
 
-    # Run id
-    run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    # Group id
+    group_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     # Run function
     def run_fn(hyperparams, checkpoint_dir=None):
@@ -157,12 +157,8 @@ if __name__ == "__main__":
                 tqdm.tqdm.__init__, disable=True
             )
 
-        # Run type
-        run_type = (
-            "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            if args.optimise is not None
-            else "CV"
-        )
+        # Run id
+        run_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
         # Datasets
         data_dir = "data/feature_extracted/" if args.features else "data/processed/"
@@ -246,11 +242,11 @@ if __name__ == "__main__":
             """
 
             if args.wandb:
-                group_name = f"{args.name}-{run_id}"
+                group_name = f"{args.name}-{group_id}"
                 config = dict(
                     args.__dict__,
                     hyperparams=hyperparams,
-                    run_type=run_type,
+                    run_type=run_id,
                     data="features" if args.features else "time-series",
                 )
                 run = wandb.init(
@@ -258,7 +254,7 @@ if __name__ == "__main__":
                     group=group_name,
                     project="lpt-for-eeg",
                     config=config,
-                    job_type=run_type,
+                    job_type=run_id,
                     reinit=True,
                 )
 
