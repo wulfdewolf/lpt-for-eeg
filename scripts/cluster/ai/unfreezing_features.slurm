@@ -24,6 +24,6 @@ for layer in {0..11}; do
                   --wandb --name features-unfreezing-${layer} \
                   --features \
                   --pretrained-transformer \
-                  --batch-size 64 --epochs 32 --learning-rate 0.00014 \
+                  --batch-size 64 --epochs 32 --learning-rate 0.00014 --decay 0.95 \
                   --freeze-ff --freeze-attn --freeze-until ${layer}
 done
