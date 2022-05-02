@@ -22,17 +22,18 @@ ggplot() +
     geom_line(data=results_features, aes(x = epochs, y=score, color=type)) +
     geom_ribbon(data=results_features, aes(x = epochs, ymax = max, ymin = min), alpha = 0.6, fill = "lightsalmon") +
     scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)) +
-    #scale_color_manual("",values = c("skyblue", "lightsalmon"), labels = c("time-series", "features"))+
+    geom_hline(yintercept=0.25, linetype="dashed") +
     theme(text = element_text(size = 30),
           panel.grid.major.x = element_blank(),
           axis.ticks.y = element_line(colour="#e7e7e7"),
           panel.grid.major.y = element_line(size=0.1, color="#ededed"),
           panel.background = element_blank(),
           legend.title=element_blank(),
+
           legend.key=element_blank(),
           legend.position = c(0.15, 0.9)) +
     labs(x="Epochs", y="Score")
-ggsave("./scripts/plotting/plots/training_optimisation_score.pdf")
+ggsave("./scripts/plotting/plots/validation_optimisation_score.pdf")
 
 ###
 # Training/Validation loss
@@ -76,6 +77,7 @@ ggplot(results, aes(y = score, fill=type, color = type)) +
     xlim(-1,1) +
     facet_wrap(~fct_relevel(type, "time-series", "features"), scales = "free_x", strip.position = "bottom") +
     scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)) +
+    geom_hline(yintercept=0.25, linetype="dashed") +
     scale_fill_manual(values=c("lightsalmon", "skyblue")) +
     theme(text = element_text(size = 30),
           panel.spacing = unit(0, "lines"),
