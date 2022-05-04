@@ -48,7 +48,7 @@ class FreezableGPT2(torch.nn.Module):
         """
         FREEZING
         """
-        assert len(freeze_between == 2) and freeze_between[0] > -1 and freeze_between[1] < 13
+        assert len(freeze_between) == 2 and freeze_between[0] > -1 and freeze_between[1] < 13
 
         for name, p in self.transformer.named_parameters():
             name = name.lower()
