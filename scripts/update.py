@@ -1,7 +1,7 @@
 import wandb
 
 api = wandb.Api(timeout=20)
-runs = api.runs(path="wulfdewolf/lpt-for-eeg", filters={"config.name": "features-optimisation-downsampled"})
+runs = api.runs(path="wulfdewolf/lpt-for-eeg", filters={"config.name": "signal-optimisation"})
 print(len(runs))
 
 for run in runs:

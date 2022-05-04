@@ -230,7 +230,7 @@ if __name__ == "__main__":
                 hyperparams["dropout"],
                 orth_gain=hyperparams["orth_gain"],
                 pretrained=args.pretrained_transformer,
-                freeze_between=hyperparams["freeze_between"],
+                freeze_between=args.freeze_between,
                 freeze_pos=args.freeze_pos,
                 freeze_ln=args.freeze_ln,
                 freeze_attn=args.freeze_attn,
@@ -249,8 +249,8 @@ if __name__ == "__main__":
                     hyperparams=hyperparams,
                     run_type=run_id,
                     data="features" if args.features else "time-series",
-                    freeze_lower = hyperparams["freeze_between"][0],
-                    freeze_upper = hyperparams["freeze_between"][1],
+                    freeze_lower = args.freeze_between[0],
+                    freeze_upper = args.freeze_between[1],
                 )
                 run = wandb.init(
                     name="test-subject-" + str(test_subject_idx + 1),
@@ -477,7 +477,6 @@ if __name__ == "__main__":
         hyperparams = {
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            "freeze_between": args.__dict__.pop("freeze_between"),
             "decay": args.__dict__.pop("decay"),
             "learning_rate": args.__dict__.pop("learning_rate"),
             "batch_size": args.__dict__.pop("batch_size"),
@@ -503,7 +502,6 @@ if __name__ == "__main__":
             # Fixed
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            "freeze_between": args.__dict__.pop("freeze_between"),
             "decay": args.__dict__.pop("decay"),
             # Optimisable
             "learning_rate": hyperopt.hp.loguniform(
