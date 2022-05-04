@@ -19,11 +19,11 @@ python -m pip install -r scripts/cluster/ai/requirements.txt
 # WandB key
 export WANDB_API_KEY=32c332a8b457162261635d4a8a940da285a355f0
 
-for layer in {0..11}; do
+for layer in {1..11}; do
     python run.py --cluster /home/wdewolf/lpt-for-eeg \
-                  --wandb --name features-unfreezing-${layer} \
+                  --wandb --name features-unfreezing-to-${layer} \
                   --features \
                   --pretrained-transformer \
-                  --batch-size 64 --epochs 32 --learning-rate 0.00014 --decay 0.95 \
-                  --freeze-ff --freeze-attn --freeze-until ${layer}
+                  --batch-size 64 --epochs 32 --learning-rate 0.00014 \
+                  --freeze-ff --freeze-attn --freeze-between 1 ${layer}
 done

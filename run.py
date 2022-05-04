@@ -249,6 +249,8 @@ if __name__ == "__main__":
                     hyperparams=hyperparams,
                     run_type=run_id,
                     data="features" if args.features else "time-series",
+                    freeze_lower = hyperparams["freeze_between"][0],
+                    freeze_upper = hyperparams["freeze_between"][1],
                 )
                 run = wandb.init(
                     name="test-subject-" + str(test_subject_idx + 1),

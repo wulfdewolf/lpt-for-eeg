@@ -23,4 +23,4 @@ python run.py --cluster /home/wdewolf/lpt-for-eeg \
               --wandb --name features-optimisation \
               --features \
               --optimise 50 \
-              --pretrained-transformer --freeze-ff --freeze-attn --freeze-until 12
+              --pretrained-transformer --freeze-ff --freeze-attn --freeze-between 1 12
