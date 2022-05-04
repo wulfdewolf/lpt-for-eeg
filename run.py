@@ -60,6 +60,13 @@ if __name__ == "__main__":
     )
     # Freezing
     parser.add_argument(
+        "--freeze-between",
+        default=[0,0],
+        nargs="+",
+        type=int,
+        help="Hyperparameter: range of decoder units to freeze the specified layers for, [lower bound, upper bound], must be two numbers between 1 and 12, default is no freezing.",
+    )
+    parser.add_argument(
         "--freeze-pos",
         action="store_true",
         help="Whether or not to freeze GPT2's positional embedding.",
@@ -80,12 +87,6 @@ if __name__ == "__main__":
         help="Whether or not to freeze GPT2's feed-forward networks.",
     )
     # Hyperparameters
-    parser.add_argument(
-        "--freeze-until",
-        default=0,
-        type=int,
-        help="Hyperparameter: decoder layers to freeze the specified modules for, starting from 1 up until the specified number, maximum 12, 0 for no freezing.",
-    )
     parser.add_argument(
         "--learning-rate",
         default=0.001,
@@ -229,7 +230,7 @@ if __name__ == "__main__":
                 hyperparams["dropout"],
                 orth_gain=hyperparams["orth_gain"],
                 pretrained=args.pretrained_transformer,
-                freeze_until=hyperparams["freeze_until"],
+                freeze_between=hyperparams["freeze_between"],
                 freeze_pos=args.freeze_pos,
                 freeze_ln=args.freeze_ln,
                 freeze_attn=args.freeze_attn,
@@ -474,7 +475,7 @@ if __name__ == "__main__":
         hyperparams = {
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            "freeze_until": args.__dict__.pop("freeze_until"),
+            "freeze_between": args.__dict__.pop("freeze_between"),
             "decay": args.__dict__.pop("decay"),
             "learning_rate": args.__dict__.pop("learning_rate"),
             "batch_size": args.__dict__.pop("batch_size"),
@@ -500,7 +501,7 @@ if __name__ == "__main__":
             # Fixed
             "dropout": args.__dict__.pop("dropout"),
             "orth_gain": args.__dict__.pop("orth_gain"),
-            "freeze_until": args.__dict__.pop("freeze_until"),
+            "freeze_between": args.__dict__.pop("freeze_between"),
             "decay": args.__dict__.pop("decay"),
             # Optimisable
             "learning_rate": hyperopt.hp.loguniform(

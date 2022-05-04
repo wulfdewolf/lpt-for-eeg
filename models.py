@@ -10,7 +10,7 @@ class FreezableGPT2(torch.nn.Module):
         dropout,
         orth_gain=None,
         pretrained=True,
-        freeze_until=None,
+        freeze_between=[0,0],
         freeze_pos=False,
         freeze_ln=False,
         freeze_attn=True,
@@ -48,7 +48,7 @@ class FreezableGPT2(torch.nn.Module):
         """
         FREEZING
         """
-        assert freeze_until < 13 and freeze_until > -1
+        assert len(freeze_between == 2) and freeze_between[0] > -1 and freeze_between[1] < 13
 
         for name, p in self.transformer.named_parameters():
             name = name.lower()
@@ -57,8 +57,8 @@ class FreezableGPT2(torch.nn.Module):
             if name.split(".")[1].isdigit():
                 layer_number = int(name.split(".")[1]) + 1
 
-                # That are <= than a given hyperparameter
-                if layer_number <= freeze_until:
+                # That are between a given range
+                if layer_number >= freeze_between[0] and layer_number <= freeze_between[1]:
                     if "ln" in name or "norm" in name:
                         p.requires_grad = not freeze_ln
                     elif "mlp" in name:

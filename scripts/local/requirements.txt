@@ -1,9 +1,7 @@
 parse
 hyperopt
 transformers
-ray[tune]
 wandb
 numpy
-torch
 mne
 sklearn
