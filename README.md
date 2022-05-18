@@ -5,7 +5,7 @@ This repository contains the source code accompanying my master's thesis at the 
 Contact information:
 | Name | Email address | Linkedin | GitHub |
 | :--- | :--- | :--- | :--- |
-| Wolf De Wulf | [wolf.de.wulf@vub.be](mailto:wolf.de.wulf@vub.be) / [wolf.de.wulf@ed.ac.uk](mailto:wolf.de.wulf@ed.ac.uk) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |
+| Wolf De Wulf | [wolf.de.wulf@ed.ac.uk](mailto:wolf.de.wulf@ed.ac.uk) | https://www.linkedin.com/in/wolf-de-wulf/ | https://github.com/wulfdewolf |
 
 ## Usage
 
