@@ -1,4 +1,4 @@
-# Transfer Learning in BCI's: Language-Pretrained Transformers for EEG Classification
+# Transfer Learning for BCI's: Language-Pretrained Transformers for EEG Classification
 
 This repository contains the source code accompanying my master's thesis at the [Vrije Universiteit Brussel](https://www.vub.be).
 
