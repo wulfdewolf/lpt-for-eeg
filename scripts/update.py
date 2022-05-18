@@ -1,14 +1,12 @@
 import wandb
 
 api = wandb.Api(timeout=20)
-runs = api.runs(path="wulfdewolf/lpt-for-eeg", filters={"config.name": "signal-optimisation"})
+runs = api.runs(path="wulfdewolf/lpt-for-eeg", filters={"config.name": "signal-overfitting"})
 print(len(runs))
 
 for run in runs:
     hyperparams = run.config["hyperparams"] 
-    hyperparams.pop("freeze_until")
+    hyperparams["decay"] = 0.9
     run.config["hyperparams"] = hyperparams
-    run.config["freeze_lower"] = 1
-    run.config["freeze_upper"] = 12
-    run.config["freeze_between"] = [1,12]
+    run.config.pop("decay")
     run.update()
